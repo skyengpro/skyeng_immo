@@ -1,0 +1,35 @@
+{
+ "actions": [], "allow_rename": 1, "autoname": "field:plate_number",
+ "creation": "2026-08-13 00:00:00.000000", "doctype": "DocType", "editable_grid": 1, "engine": "InnoDB",
+ "field_order": ["plate_number","vehicle_type","make","model","column_break_v1","color","sticker_number","is_active",
+   "section_owner","owner_occupant","property","column_break_v2","parking_space","section_admin","insurance_expiry","notes"],
+ "fields": [
+  {"fieldname":"plate_number","fieldtype":"Data","label":"Immatriculation","reqd":1,"unique":1,"in_list_view":1,"search_index":1},
+  {"fieldname":"vehicle_type","fieldtype":"Select","label":"Type","options":"Voiture\nSUV / 4x4\nUtilitaire\nMoto\nAutre","default":"Voiture","in_list_view":1,"in_standard_filter":1},
+  {"fieldname":"make","fieldtype":"Data","label":"Marque","in_list_view":1},
+  {"fieldname":"model","fieldtype":"Data","label":"Modele"},
+  {"fieldname":"column_break_v1","fieldtype":"Column Break"},
+  {"fieldname":"color","fieldtype":"Data","label":"Couleur"},
+  {"fieldname":"sticker_number","fieldtype":"Data","label":"Vignette / macaron"},
+  {"fieldname":"is_active","fieldtype":"Check","label":"Actif","default":"1","in_standard_filter":1},
+  {"fieldname":"section_owner","fieldtype":"Section Break","label":"Proprietaire"},
+  {"fieldname":"owner_occupant","fieldtype":"Link","label":"Occupant","options":"Occupant","reqd":1,"in_list_view":1},
+  {"fieldname":"property","fieldtype":"Link","label":"Unite","options":"Property","read_only":1,"in_standard_filter":1,
+   "description":"Renseigne automatiquement depuis l'occupant."},
+  {"fieldname":"column_break_v2","fieldtype":"Column Break"},
+  {"fieldname":"parking_space","fieldtype":"Link","label":"Place de parking","options":"Parking Space"},
+  {"fieldname":"section_admin","fieldtype":"Section Break","label":"Administratif"},
+  {"fieldname":"insurance_expiry","fieldtype":"Date","label":"Expiration assurance"},
+  {"fieldname":"notes","fieldtype":"Small Text","label":"Observations"}
+ ],
+ "index_web_pages_for_search": 1, "links": [], "modified": "2026-08-13 00:00:00.000000",
+ "modified_by": "Administrator", "module": "Immobilier", "name": "Vehicle",
+ "naming_rule": "By fieldname", "owner": "Administrator",
+ "permissions": [
+  {"create":1,"delete":1,"email":1,"export":1,"print":1,"read":1,"report":1,"role":"System Manager","share":1,"write":1},
+  {"create":1,"email":1,"export":1,"print":1,"read":1,"report":1,"role":"Property Manager","share":1,"write":1},
+  {"read":1,"report":1,"role":"Gardien"}
+ ],
+ "search_fields": "plate_number,owner_occupant,property", "show_title_field_in_link": 1,
+ "sort_field": "modified", "sort_order": "DESC", "states": [], "title_field": "plate_number", "track_changes": 1
+}

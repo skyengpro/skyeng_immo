@@ -1,0 +1,32 @@
+{
+ "actions": [], "allow_rename": 1, "autoname": "format:{property}-P{parking_number}",
+ "creation": "2026-08-13 00:00:00.000000", "doctype": "DocType", "editable_grid": 1, "engine": "InnoDB",
+ "field_order": ["property","parking_number","level","column_break_p1","space_type","status","monthly_fee",
+   "section_alloc","allocated_to_unit","lease","column_break_p2","allocated_from","notes"],
+ "fields": [
+  {"fieldname":"property","fieldtype":"Link","label":"Immeuble / site","options":"Property","reqd":1,"in_list_view":1,"in_standard_filter":1},
+  {"fieldname":"parking_number","fieldtype":"Data","label":"Numero de place","reqd":1,"in_list_view":1},
+  {"fieldname":"level","fieldtype":"Select","label":"Niveau","options":"Sous-sol 1\nSous-sol 2\nRez-de-chaussee\nExterieur","default":"Sous-sol 1","in_standard_filter":1},
+  {"fieldname":"column_break_p1","fieldtype":"Column Break"},
+  {"fieldname":"space_type","fieldtype":"Select","label":"Type","options":"Couverte\nNon couverte\nBox ferme\nPMR","default":"Couverte","in_list_view":1},
+  {"fieldname":"status","fieldtype":"Select","label":"Statut","options":"Libre\nAttribuee\nReservee visiteur\nHors service","default":"Libre","read_only":1,"in_list_view":1,"in_standard_filter":1,
+   "description":"Calcule a partir de l'attribution."},
+  {"fieldname":"monthly_fee","fieldtype":"Currency","label":"Redevance mensuelle"},
+  {"fieldname":"section_alloc","fieldtype":"Section Break","label":"Attribution"},
+  {"fieldname":"allocated_to_unit","fieldtype":"Link","label":"Unite attributaire","options":"Property","in_list_view":1},
+  {"fieldname":"lease","fieldtype":"Link","label":"Bail","options":"Lease"},
+  {"fieldname":"column_break_p2","fieldtype":"Column Break"},
+  {"fieldname":"allocated_from","fieldtype":"Date","label":"Attribuee depuis"},
+  {"fieldname":"notes","fieldtype":"Small Text","label":"Observations"}
+ ],
+ "index_web_pages_for_search": 1, "links": [], "modified": "2026-08-13 00:00:00.000000",
+ "modified_by": "Administrator", "module": "Immobilier", "name": "Parking Space",
+ "naming_rule": "Expression", "owner": "Administrator",
+ "permissions": [
+  {"create":1,"delete":1,"email":1,"export":1,"print":1,"read":1,"report":1,"role":"System Manager","share":1,"write":1},
+  {"create":1,"email":1,"export":1,"print":1,"read":1,"report":1,"role":"Property Manager","share":1,"write":1},
+  {"read":1,"report":1,"role":"Gardien"}
+ ],
+ "search_fields": "parking_number,allocated_to_unit", "sort_field": "modified", "sort_order": "DESC",
+ "states": [], "track_changes": 1
+}
