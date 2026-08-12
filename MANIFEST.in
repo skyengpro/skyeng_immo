@@ -1,0 +1,2 @@
+include README.md
+recursive-include skyeng_immo *.json *.py *.txt
