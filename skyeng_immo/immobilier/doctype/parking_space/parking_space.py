@@ -18,9 +18,9 @@ class ParkingSpace(Document):
 		# (a standalone villa owns its own spaces).
 		if parent != self.property and self.allocated_to_unit != self.property:
 			frappe.throw(
-				_("{0} ne depend pas de {1}. Une place ne peut etre attribuee qu'a une unite du meme site.").format(
-					self.allocated_to_unit, self.property
-				)
+				_(
+					"{0} ne depend pas de {1}. Une place ne peut etre attribuee qu'a une unite du meme site."
+				).format(self.allocated_to_unit, self.property)
 			)
 
 		if self.lease:
@@ -50,8 +50,9 @@ def parking_summary(property_name: str | None = None) -> list[dict]:
 		conditions += " AND p.property = %(property)s"
 		values["property"] = property_name
 	return frappe.db.sql(
-		f"""SELECT p.allocated_to_unit AS unit, COUNT(DISTINCT p.name) AS spaces,
-			   COUNT(DISTINCT v.name) AS vehicles
+		f"""SELECT p.allocated_to_unit AS unit,
+				COUNT(DISTINCT p.name) AS spaces,
+				COUNT(DISTINCT v.name) AS vehicles
 			FROM `tabParking Space` p
 			LEFT JOIN `tabVehicle` v ON v.parking_space = p.name AND v.is_active = 1
 			{conditions}

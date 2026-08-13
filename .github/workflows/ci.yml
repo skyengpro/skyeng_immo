@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  static:
+    name: Static checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Compile every module
+        run: python -m compileall -q skyeng_immo
+
+      - name: Validate DocType JSON
+        run: python scripts/validate_doctypes.py
+
+      - name: Lint
+        run: |
+          pip install ruff==0.6.9
+          ruff check skyeng_immo
+          ruff format --check skyeng_immo
+
+      - name: Packaging guard
+        # frappe/erpnext/propms must never appear as pip dependencies: uv then
+        # resolves the framework, whose pypika git pin it rejects, and the
+        # Press image build dies with exit 167.
+        run: |
+          if grep -qE '^\s*"?(frappe|erpnext|propms)"?\s*[,=]' pyproject.toml; then
+            echo "::error::framework packages must not be pip dependencies"; exit 1
+          fi
+          echo "packaging OK"

@@ -39,9 +39,7 @@ class Vehicle(Document):
 		)
 		if taken_by:
 			frappe.throw(
-				_("La place {0} est deja occupee par le vehicule {1}.").format(
-					self.parking_space, taken_by
-				)
+				_("La place {0} est deja occupee par le vehicule {1}.").format(self.parking_space, taken_by)
 			)
 
 		allocated_unit = frappe.db.get_value("Parking Space", self.parking_space, "allocated_to_unit")

@@ -43,9 +43,7 @@ class VisitorLog(Document):
 
 	def set_duration_and_status(self):
 		if self.check_out and self.check_in:
-			self.duration_minutes = int(
-				time_diff_in_seconds(self.check_out, self.check_in) // 60
-			)
+			self.duration_minutes = int(time_diff_in_seconds(self.check_out, self.check_in) // 60)
 			self.status = "Sorti"
 		else:
 			self.duration_minutes = 0
@@ -72,6 +70,14 @@ def currently_inside(property_name: str | None = None) -> list[dict]:
 	return frappe.get_all(
 		"Visitor Log",
 		filters=filters,
-		fields=["name", "visitor_name", "visiting_property", "host_occupant", "check_in", "badge_number", "vehicle_plate"],
+		fields=[
+			"name",
+			"visitor_name",
+			"visiting_property",
+			"host_occupant",
+			"check_in",
+			"badge_number",
+			"vehicle_plate",
+		],
 		order_by="check_in",
 	)

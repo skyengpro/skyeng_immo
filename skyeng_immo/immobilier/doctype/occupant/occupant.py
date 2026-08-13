@@ -37,15 +37,15 @@ class Occupant(Document):
 
 		if self.property and lease_property and self.property != lease_property:
 			frappe.throw(
-				_("Le bail {0} porte sur {1}, pas sur {2}.").format(
-					self.lease, lease_property, self.property
-				)
+				_("Le bail {0} porte sur {1}, pas sur {2}.").format(self.lease, lease_property, self.property)
 			)
 		if not self.property:
 			self.property = lease_property
 
 	def set_status(self):
-		self.status = "Parti" if self.move_out_date and getdate(self.move_out_date) <= getdate(today()) else "Actif"
+		self.status = (
+			"Parti" if self.move_out_date and getdate(self.move_out_date) <= getdate(today()) else "Actif"
+		)
 
 
 def get_active_occupants(property_name: str) -> list[dict]:
