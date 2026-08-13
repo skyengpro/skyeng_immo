@@ -27,21 +27,49 @@ after_migrate = "skyeng_immo.install.after_migrate"
 fixtures = [
 	{
 		"dt": "Number Card",
-		"filters": [["name", "in", [
-			"Unites totales", "Unites louees", "Unites libres", "Baux actifs",
-			"Occupants actifs", "Visiteurs presents", "Visites (total)",
-			"Facture (XAF)", "Encaisse (XAF)", "Impayes (XAF)", "Factures impayees",
-			"Cautions detenues (XAF)", "Compteurs actifs", "Controles maintenance",
-			"Polices d'assurance", "Equipements", "Hors garantie",
-		]]],
+		"filters": [
+			[
+				"name",
+				"in",
+				[
+					"Unites totales",
+					"Unites louees",
+					"Unites libres",
+					"Baux actifs",
+					"Occupants actifs",
+					"Visiteurs presents",
+					"Visites (total)",
+					"Facture (XAF)",
+					"Encaisse (XAF)",
+					"Impayes (XAF)",
+					"Factures impayees",
+					"Cautions detenues (XAF)",
+					"Compteurs actifs",
+					"Controles maintenance",
+					"Polices d'assurance",
+					"Equipements",
+					"Hors garantie",
+				],
+			]
+		],
 	},
 	{
 		"dt": "Dashboard Chart",
-		"filters": [["name", "in", [
-			"Statut des unites", "Unites par immeuble", "Loyer par immeuble (XAF)",
-			"Facturation prevue (XAF)", "Facturation par mois (XAF)",
-			"Encaissements par mois (XAF)", "Visites par motif",
-		]]],
+		"filters": [
+			[
+				"name",
+				"in",
+				[
+					"Statut des unites",
+					"Unites par immeuble",
+					"Loyer par immeuble (XAF)",
+					"Facturation prevue (XAF)",
+					"Facturation par mois (XAF)",
+					"Encaissements par mois (XAF)",
+					"Visites par motif",
+				],
+			]
+		],
 	},
 	{"dt": "Report", "filters": [["module", "=", "Immobilier"], ["is_standard", "=", "No"]]},
 	{"dt": "Workspace", "filters": [["name", "=", "Immobilier"]]},
