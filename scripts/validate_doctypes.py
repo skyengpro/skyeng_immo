@@ -48,6 +48,29 @@ for path in paths:
     if title and title not in fields:
         problems.append(f"{name}: title_field {title!r} is not a field")
 
+# Fixtures must name what they ship. A broad filter silently adopts other
+# apps' records and overwrites them on every migrate.
+import re
+
+hooks = (ROOT / "skyeng_immo" / "hooks.py").read_text()
+ns = {}
+exec(compile(hooks, "hooks", "exec"), ns)
+for entry in ns.get("fixtures", []):
+    dt = entry["dt"] if isinstance(entry, dict) else entry
+    if not isinstance(entry, dict) or not entry.get("filters"):
+        problems.append(f"fixture {dt}: no filters - would export every record")
+
+fixture_dir = ROOT / "skyeng_immo" / "fixtures"
+for fx in sorted(fixture_dir.glob("*.json")):
+    docs = json.loads(fx.read_text())
+    for d in docs:
+        if "modified" in d or "creation" in d:
+            problems.append(f"{fx.name}: volatile timestamps left in export")
+        if fx.name.startswith("workspace") and d.get("module"):
+            problems.append(f"{fx.name}: workspace claims module {d['module']!r}; "
+                            "app-module workspaces get deleted as orphans on migrate")
+    print(f"fixture {fx.name}: {len(docs)} docs")
+
 print(f"checked {len(OWN)} doctypes: {', '.join(sorted(OWN))}")
 if problems:
     print("\n".join("FAIL " + p for p in problems))

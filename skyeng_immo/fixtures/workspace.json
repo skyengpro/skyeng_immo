@@ -1,0 +1,311 @@
+[
+ {
+  "name": "Immobilier",
+  "label": "Immobilier",
+  "title": "Immobilier",
+  "sequence_id": 1.0,
+  "type": "Workspace",
+  "link_type": "DocType",
+  "icon": "organization",
+  "indicator_color": "green",
+  "hide_custom": 1,
+  "public": 1,
+  "is_hidden": 0,
+  "content": "[{\"id\": \"h1\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Patrimoine & occupation</b></span>\", \"col\": 12}}, {\"id\": \"a0\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Unites totales\", \"col\": 3}}, {\"id\": \"a1\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Unites louees\", \"col\": 3}}, {\"id\": \"a2\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Unites libres\", \"col\": 3}}, {\"id\": \"a3\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Occupants actifs\", \"col\": 3}}, {\"id\": \"h2\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Finances</b></span>\", \"col\": 12}}, {\"id\": \"b0\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Facture (XAF)\", \"col\": 3}}, {\"id\": \"b1\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Encaisse (XAF)\", \"col\": 3}}, {\"id\": \"b2\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Impayes (XAF)\", \"col\": 3}}, {\"id\": \"b3\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Factures impayees\", \"col\": 3}}, {\"id\": \"h3\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Exploitation & securite</b></span>\", \"col\": 12}}, {\"id\": \"c0\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Visiteurs presents\", \"col\": 3}}, {\"id\": \"c1\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Equipements\", \"col\": 3}}, {\"id\": \"c2\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Hors garantie\", \"col\": 3}}, {\"id\": \"c3\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Controles maintenance\", \"col\": 3}}, {\"id\": \"h4\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Analyses</b></span>\", \"col\": 12}}, {\"id\": \"g0\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Statut des unites\", \"col\": 6}}, {\"id\": \"g1\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Unites par immeuble\", \"col\": 6}}, {\"id\": \"g2\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Facturation par mois (XAF)\", \"col\": 6}}, {\"id\": \"g3\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Encaissements par mois (XAF)\", \"col\": 6}}, {\"id\": \"g4\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Visites par motif\", \"col\": 6}}, {\"id\": \"g5\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Loyer par immeuble (XAF)\", \"col\": 6}}, {\"id\": \"h5\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Acces rapide</b></span>\", \"col\": 12}}, {\"id\": \"s0\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Occupants\", \"col\": 4}}, {\"id\": \"s1\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Registre visiteurs\", \"col\": 4}}, {\"id\": \"s2\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Vehicules\", \"col\": 4}}, {\"id\": \"s3\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Places de parking\", \"col\": 4}}, {\"id\": \"s4\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Biens & unites\", \"col\": 4}}, {\"id\": \"s5\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Baux\", \"col\": 4}}, {\"id\": \"h6\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Rapports</b></span>\", \"col\": 12}}, {\"id\": \"cr\", \"type\": \"card\", \"data\": {\"card_name\": \"Rapports\", \"col\": 4}}]",
+  "doctype": "Workspace",
+  "number_cards": [
+   {
+    "number_card_name": "Unites totales",
+    "label": "Unites totales",
+    "doctype": "Workspace Number Card"
+   },
+   {
+    "number_card_name": "Unites louees",
+    "label": "Unites louees",
+    "doctype": "Workspace Number Card"
+   },
+   {
+    "number_card_name": "Unites libres",
+    "label": "Unites libres",
+    "doctype": "Workspace Number Card"
+   },
+   {
+    "number_card_name": "Occupants actifs",
+    "label": "Occupants actifs",
+    "doctype": "Workspace Number Card"
+   },
+   {
+    "number_card_name": "Facture (XAF)",
+    "label": "Facture (XAF)",
+    "doctype": "Workspace Number Card"
+   },
+   {
+    "number_card_name": "Encaisse (XAF)",
+    "label": "Encaisse (XAF)",
+    "doctype": "Workspace Number Card"
+   },
+   {
+    "number_card_name": "Impayes (XAF)",
+    "label": "Impayes (XAF)",
+    "doctype": "Workspace Number Card"
+   },
+   {
+    "number_card_name": "Factures impayees",
+    "label": "Factures impayees",
+    "doctype": "Workspace Number Card"
+   },
+   {
+    "number_card_name": "Visiteurs presents",
+    "label": "Visiteurs presents",
+    "doctype": "Workspace Number Card"
+   },
+   {
+    "number_card_name": "Equipements",
+    "label": "Equipements",
+    "doctype": "Workspace Number Card"
+   },
+   {
+    "number_card_name": "Hors garantie",
+    "label": "Hors garantie",
+    "doctype": "Workspace Number Card"
+   },
+   {
+    "number_card_name": "Controles maintenance",
+    "label": "Controles maintenance",
+    "doctype": "Workspace Number Card"
+   }
+  ],
+  "charts": [
+   {
+    "chart_name": "Statut des unites",
+    "label": "Statut des unites",
+    "doctype": "Workspace Chart"
+   },
+   {
+    "chart_name": "Unites par immeuble",
+    "label": "Unites par immeuble",
+    "doctype": "Workspace Chart"
+   },
+   {
+    "chart_name": "Facturation par mois (XAF)",
+    "label": "Facturation par mois (XAF)",
+    "doctype": "Workspace Chart"
+   },
+   {
+    "chart_name": "Encaissements par mois (XAF)",
+    "label": "Encaissements par mois (XAF)",
+    "doctype": "Workspace Chart"
+   },
+   {
+    "chart_name": "Visites par motif",
+    "label": "Visites par motif",
+    "doctype": "Workspace Chart"
+   },
+   {
+    "chart_name": "Loyer par immeuble (XAF)",
+    "label": "Loyer par immeuble (XAF)",
+    "doctype": "Workspace Chart"
+   }
+  ],
+  "shortcuts": [
+   {
+    "type": "DocType",
+    "link_to": "Occupant",
+    "doc_view": "List",
+    "label": "Occupants",
+    "doctype": "Workspace Shortcut"
+   },
+   {
+    "type": "DocType",
+    "link_to": "Visitor Log",
+    "doc_view": "List",
+    "label": "Registre visiteurs",
+    "doctype": "Workspace Shortcut"
+   },
+   {
+    "type": "DocType",
+    "link_to": "Vehicle",
+    "doc_view": "List",
+    "label": "Vehicules",
+    "doctype": "Workspace Shortcut"
+   },
+   {
+    "type": "DocType",
+    "link_to": "Parking Space",
+    "doc_view": "List",
+    "label": "Places de parking",
+    "doctype": "Workspace Shortcut"
+   },
+   {
+    "type": "DocType",
+    "link_to": "Property",
+    "doc_view": "List",
+    "label": "Biens & unites",
+    "doctype": "Workspace Shortcut"
+   },
+   {
+    "type": "DocType",
+    "link_to": "Lease",
+    "doc_view": "List",
+    "label": "Baux",
+    "doctype": "Workspace Shortcut"
+   }
+  ],
+  "links": [
+   {
+    "type": "Card Break",
+    "label": "Rapports",
+    "hidden": 0,
+    "link_type": "DocType",
+    "onboard": 0,
+    "is_query_report": 0,
+    "link_count": 0,
+    "doctype": "Workspace Link"
+   },
+   {
+    "type": "Link",
+    "label": "Taux d occupation",
+    "hidden": 0,
+    "link_type": "Report",
+    "link_to": "Taux d occupation",
+    "dependencies": "Property",
+    "onboard": 0,
+    "is_query_report": 1,
+    "link_count": 0,
+    "doctype": "Workspace Link"
+   },
+   {
+    "type": "Link",
+    "label": "Occupants par unite",
+    "hidden": 0,
+    "link_type": "Report",
+    "link_to": "Occupants par unite",
+    "dependencies": "Occupant",
+    "onboard": 0,
+    "is_query_report": 1,
+    "link_count": 0,
+    "doctype": "Workspace Link"
+   },
+   {
+    "type": "Link",
+    "label": "Registre des visiteurs",
+    "hidden": 0,
+    "link_type": "Report",
+    "link_to": "Registre des visiteurs",
+    "dependencies": "Visitor Log",
+    "onboard": 0,
+    "is_query_report": 1,
+    "link_count": 0,
+    "doctype": "Workspace Link"
+   },
+   {
+    "type": "Link",
+    "label": "Rent Roll Immobilier",
+    "hidden": 0,
+    "link_type": "Report",
+    "link_to": "Rent Roll Immobilier",
+    "dependencies": "Lease",
+    "onboard": 0,
+    "is_query_report": 1,
+    "link_count": 0,
+    "doctype": "Workspace Link"
+   },
+   {
+    "type": "Link",
+    "label": "Historique des paiements",
+    "hidden": 0,
+    "link_type": "Report",
+    "link_to": "Historique des paiements",
+    "dependencies": "Sales Invoice",
+    "onboard": 0,
+    "is_query_report": 1,
+    "link_count": 0,
+    "doctype": "Workspace Link"
+   },
+   {
+    "type": "Link",
+    "label": "Impayes par locataire",
+    "hidden": 0,
+    "link_type": "Report",
+    "link_to": "Impayes par locataire",
+    "dependencies": "Sales Invoice",
+    "onboard": 0,
+    "is_query_report": 1,
+    "link_count": 0,
+    "doctype": "Workspace Link"
+   },
+   {
+    "type": "Link",
+    "label": "Echeances des baux",
+    "hidden": 0,
+    "link_type": "Report",
+    "link_to": "Echeances des baux",
+    "dependencies": "Lease",
+    "onboard": 0,
+    "is_query_report": 1,
+    "link_count": 0,
+    "doctype": "Workspace Link"
+   },
+   {
+    "type": "Link",
+    "label": "Equipements par bien",
+    "hidden": 0,
+    "link_type": "Report",
+    "link_to": "Equipements par bien",
+    "dependencies": "Asset",
+    "onboard": 0,
+    "is_query_report": 1,
+    "link_count": 0,
+    "doctype": "Workspace Link"
+   },
+   {
+    "type": "Link",
+    "label": "Maintenance des equipements",
+    "hidden": 0,
+    "link_type": "Report",
+    "link_to": "Maintenance des equipements",
+    "dependencies": "Asset Maintenance Task",
+    "onboard": 0,
+    "is_query_report": 1,
+    "link_count": 0,
+    "doctype": "Workspace Link"
+   },
+   {
+    "type": "Link",
+    "label": "Historique des reparations",
+    "hidden": 0,
+    "link_type": "Report",
+    "link_to": "Historique des reparations",
+    "dependencies": "Asset Repair",
+    "onboard": 0,
+    "is_query_report": 1,
+    "link_count": 0,
+    "doctype": "Workspace Link"
+   },
+   {
+    "type": "Link",
+    "label": "Consommation des compteurs",
+    "hidden": 0,
+    "link_type": "Report",
+    "link_to": "Consommation des compteurs",
+    "dependencies": "Meter Reading",
+    "onboard": 0,
+    "is_query_report": 1,
+    "link_count": 0,
+    "doctype": "Workspace Link"
+   },
+   {
+    "type": "Link",
+    "label": "Historique de maintenance",
+    "hidden": 0,
+    "link_type": "Report",
+    "link_to": "Historique de maintenance",
+    "dependencies": "Daily Checklist",
+    "onboard": 0,
+    "is_query_report": 1,
+    "link_count": 0,
+    "doctype": "Workspace Link"
+   }
+  ]
+ }
+]

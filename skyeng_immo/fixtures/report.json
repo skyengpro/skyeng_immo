@@ -1,0 +1,278 @@
+[
+ {
+  "name": "Historique des reparations",
+  "report_name": "Historique des reparations",
+  "ref_doctype": "Asset Repair",
+  "is_standard": "No",
+  "module": "Immobilier",
+  "report_type": "Query Report",
+  "letter_head": "Company Letterhead - Grey",
+  "add_total_row": 0,
+  "disabled": 0,
+  "prepared_report": 0,
+  "disable_prepared_report_automation": 0,
+  "add_translate_data": 0,
+  "timeout": 0,
+  "query": "SELECT r.failure_date AS \"Panne:Date:95\", r.asset AS \"Equipement:Link/Asset:190\",\n       a.immo_property AS \"Bien:Link/Property:140\", r.description AS \"Intervention::280\",\n       r.repair_cost AS \"Cout XAF:Currency:120\", r.completion_date AS \"Cloture:Date:95\",\n       r.repair_status AS \"Statut::110\",\n       CASE WHEN a.warranty_expiry_date >= r.failure_date THEN 'Oui' ELSE 'Non' END AS \"Sous garantie::110\"\nFROM `tabAsset Repair` r LEFT JOIN tabAsset a ON a.name = r.asset\nORDER BY r.failure_date DESC",
+  "doctype": "Report",
+  "roles": [
+   {
+    "role": "System Manager",
+    "doctype": "Has Role"
+   }
+  ]
+ },
+ {
+  "name": "Maintenance des equipements",
+  "report_name": "Maintenance des equipements",
+  "ref_doctype": "Asset Maintenance Task",
+  "is_standard": "No",
+  "module": "Immobilier",
+  "report_type": "Query Report",
+  "letter_head": "Company Letterhead - Grey",
+  "add_total_row": 0,
+  "disabled": 0,
+  "prepared_report": 0,
+  "disable_prepared_report_automation": 0,
+  "add_translate_data": 0,
+  "timeout": 0,
+  "query": "SELECT m.asset_name AS \"Equipement:Link/Asset:190\",\n       a.immo_property AS \"Bien:Link/Property:140\",\n       t.maintenance_task AS \"Tache::250\", t.periodicity AS \"Periodicite::110\",\n       t.next_due_date AS \"Prochaine echeance:Date:150\",\n       DATEDIFF(t.next_due_date, CURDATE()) AS \"Dans (j):Int:95\",\n       t.maintenance_status AS \"Statut::95\"\nFROM `tabAsset Maintenance Task` t\nJOIN `tabAsset Maintenance` m ON m.name = t.parent\nLEFT JOIN tabAsset a ON a.name = m.asset_name\nORDER BY t.next_due_date",
+  "doctype": "Report",
+  "roles": [
+   {
+    "role": "System Manager",
+    "doctype": "Has Role"
+   }
+  ]
+ },
+ {
+  "name": "Equipements par bien",
+  "report_name": "Equipements par bien",
+  "ref_doctype": "Asset",
+  "is_standard": "No",
+  "module": "Immobilier",
+  "report_type": "Query Report",
+  "letter_head": "Company Letterhead - Grey",
+  "add_total_row": 0,
+  "disabled": 0,
+  "prepared_report": 0,
+  "disable_prepared_report_automation": 0,
+  "add_translate_data": 0,
+  "timeout": 0,
+  "query": "SELECT a.immo_property AS \"Bien:Link/Property:150\", a.asset_name AS \"Equipement::240\",\n       a.item_code AS \"Type:Link/Item:140\", a.purchase_date AS \"Achat:Date:95\",\n       a.purchase_amount AS \"Valeur XAF:Currency:130\",\n       a.warranty_expiry_date AS \"Fin garantie:Date:110\",\n       CASE WHEN a.warranty_expiry_date >= CURDATE() THEN 'Sous garantie' ELSE 'Hors garantie' END AS \"Garantie::120\",\n       DATEDIFF(a.warranty_expiry_date, CURDATE()) AS \"Jours restants:Int:110\",\n       a.location AS \"Site:Link/Location:150\"\nFROM tabAsset a ORDER BY a.immo_property, a.asset_name",
+  "doctype": "Report",
+  "roles": [
+   {
+    "role": "System Manager",
+    "doctype": "Has Role"
+   }
+  ]
+ },
+ {
+  "name": "Registre des visiteurs",
+  "report_name": "Registre des visiteurs",
+  "ref_doctype": "Visitor Log",
+  "is_standard": "No",
+  "module": "Immobilier",
+  "report_type": "Query Report",
+  "letter_head": "Company Letterhead - Grey",
+  "add_total_row": 0,
+  "disabled": 0,
+  "prepared_report": 0,
+  "disable_prepared_report_automation": 0,
+  "add_translate_data": 0,
+  "timeout": 0,
+  "query": "SELECT v.check_in AS \"Entree:Datetime:150\", v.visitor_name AS \"Visiteur::190\",\n       v.visiting_property AS \"Unite:Link/Property:110\", v.host_occupant AS \"Hote:Link/Occupant:150\",\n       v.purpose AS \"Motif::170\", v.vehicle_plate AS \"Vehicule::110\",\n       v.check_out AS \"Sortie:Datetime:150\", v.duration_minutes AS \"Duree (min):Int:105\",\n       v.guard_on_duty AS \"Agent::130\"\nFROM `tabVisitor Log` v ORDER BY v.check_in DESC",
+  "doctype": "Report",
+  "roles": [
+   {
+    "role": "System Manager",
+    "doctype": "Has Role"
+   }
+  ]
+ },
+ {
+  "name": "Occupants par unite",
+  "report_name": "Occupants par unite",
+  "ref_doctype": "Occupant",
+  "is_standard": "No",
+  "module": "Immobilier",
+  "report_type": "Query Report",
+  "letter_head": "Company Letterhead - Grey",
+  "add_total_row": 0,
+  "disabled": 0,
+  "prepared_report": 0,
+  "disable_prepared_report_automation": 0,
+  "add_translate_data": 0,
+  "timeout": 0,
+  "query": "SELECT o.property AS \"Unite:Link/Property:120\",\n       COUNT(*) AS \"Occupants:Int:95\",\n       SUM(o.occupant_type='Enfant') AS \"Enfants:Int:85\",\n       GROUP_CONCAT(o.full_name ORDER BY o.occupant_type SEPARATOR ', ') AS \"Personnes::420\"\nFROM tabOccupant o WHERE o.status='Actif' GROUP BY o.property ORDER BY o.property",
+  "doctype": "Report",
+  "roles": [
+   {
+    "role": "System Manager",
+    "doctype": "Has Role"
+   }
+  ]
+ },
+ {
+  "name": "Impayes par locataire",
+  "report_name": "Impayes par locataire",
+  "ref_doctype": "Sales Invoice",
+  "is_standard": "No",
+  "module": "Immobilier",
+  "report_type": "Query Report",
+  "letter_head": "Company Letterhead - Grey",
+  "add_total_row": 0,
+  "disabled": 0,
+  "prepared_report": 0,
+  "disable_prepared_report_automation": 0,
+  "add_translate_data": 0,
+  "timeout": 0,
+  "query": "SELECT si.customer AS \"Locataire:Link/Customer:210\",\n       COUNT(*) AS \"Factures:Int:90\",\n       SUM(si.grand_total) AS \"Facture XAF:Currency:140\",\n       SUM(si.outstanding_amount) AS \"Impaye XAF:Currency:140\",\n       MIN(si.due_date) AS \"Plus ancienne echeance:Date:170\",\n       DATEDIFF(CURDATE(), MIN(si.due_date)) AS \"Retard (j):Int:110\"\nFROM `tabSales Invoice` si WHERE si.docstatus=1 AND si.outstanding_amount > 0\nGROUP BY si.customer ORDER BY SUM(si.outstanding_amount) DESC",
+  "doctype": "Report",
+  "roles": [
+   {
+    "role": "System Manager",
+    "doctype": "Has Role"
+   }
+  ]
+ },
+ {
+  "name": "Historique des paiements",
+  "report_name": "Historique des paiements",
+  "ref_doctype": "Sales Invoice",
+  "is_standard": "No",
+  "module": "Immobilier",
+  "report_type": "Query Report",
+  "letter_head": "Company Letterhead - Grey",
+  "add_total_row": 0,
+  "disabled": 0,
+  "prepared_report": 0,
+  "disable_prepared_report_automation": 0,
+  "add_translate_data": 0,
+  "timeout": 0,
+  "query": "SELECT si.posting_date AS \"Date:Date:95\",\n       si.name AS \"Facture:Link/Sales Invoice:165\",\n       l.property AS \"Unite:Link/Property:110\",\n       si.customer AS \"Locataire:Link/Customer:190\",\n       si.grand_total AS \"Montant XAF:Currency:130\",\n       (si.grand_total - si.outstanding_amount) AS \"Regle XAF:Currency:130\",\n       si.outstanding_amount AS \"Solde XAF:Currency:120\",\n       si.status AS \"Statut::100\", si.due_date AS \"Echeance:Date:95\"\nFROM `tabSales Invoice` si LEFT JOIN tabLease l ON l.name=si.lease\nWHERE si.docstatus=1 ORDER BY si.posting_date DESC, si.name",
+  "doctype": "Report",
+  "roles": [
+   {
+    "role": "System Manager",
+    "doctype": "Has Role"
+   }
+  ]
+ },
+ {
+  "name": "Historique de maintenance",
+  "report_name": "Historique de maintenance",
+  "ref_doctype": "Daily Checklist",
+  "is_standard": "No",
+  "module": "Immobilier",
+  "report_type": "Query Report",
+  "letter_head": "Company Letterhead - Grey",
+  "add_total_row": 0,
+  "disabled": 0,
+  "prepared_report": 0,
+  "disable_prepared_report_automation": 0,
+  "add_translate_data": 0,
+  "timeout": 0,
+  "query": "SELECT c.checkup_date AS \"Date:Date:100\", c.property AS \"Bien:Link/Property:150\",\n       c.area AS \"Zone:Link/Checklist Checkup Area:180\", c.shift AS \"Vacation::90\",\n       d.checklist_task AS \"Tache::250\", d.remarks AS \"Observation::220\"\nFROM `tabDaily Checklist` c JOIN `tabDaily Checklist Detail` d ON d.parent=c.name\nORDER BY c.checkup_date DESC, c.property",
+  "doctype": "Report",
+  "roles": [
+   {
+    "role": "System Manager",
+    "doctype": "Has Role"
+   }
+  ]
+ },
+ {
+  "name": "Consommation des compteurs",
+  "report_name": "Consommation des compteurs",
+  "ref_doctype": "Meter Reading",
+  "is_standard": "No",
+  "module": "Immobilier",
+  "report_type": "Query Report",
+  "letter_head": "Company Letterhead - Grey",
+  "add_total_row": 0,
+  "disabled": 0,
+  "prepared_report": 0,
+  "disable_prepared_report_automation": 0,
+  "add_translate_data": 0,
+  "timeout": 0,
+  "query": "SELECT mr.reading_date AS \"Date:Date:100\", mr.meter_type AS \"Type:Link/Item:130\",\n       d.property AS \"Bien:Link/Property:140\", d.meter_number AS \"Compteur:Link/Meter:170\",\n       d.previous_meter_reading AS \"Ancien index:Float:110\",\n       d.current_meter_reading AS \"Nouvel index:Float:110\",\n       d.reading_difference AS \"Consommation:Float:120\"\nFROM `tabMeter Reading Detail` d JOIN `tabMeter Reading` mr ON mr.name=d.parent\nORDER BY mr.reading_date DESC, d.property",
+  "doctype": "Report",
+  "roles": [
+   {
+    "role": "System Manager",
+    "doctype": "Has Role"
+   }
+  ]
+ },
+ {
+  "name": "Echeances des baux",
+  "report_name": "Echeances des baux",
+  "ref_doctype": "Lease",
+  "is_standard": "No",
+  "module": "Immobilier",
+  "report_type": "Query Report",
+  "letter_head": "Company Letterhead - Grey",
+  "add_total_row": 0,
+  "disabled": 0,
+  "prepared_report": 0,
+  "disable_prepared_report_automation": 0,
+  "add_translate_data": 0,
+  "timeout": 0,
+  "query": "SELECT l.name AS \"Bail:Link/Lease:160\", l.property AS \"Unite:Link/Property:110\",\n       l.customer AS \"Locataire:Link/Customer:190\", l.end_date AS \"Fin:Date:100\",\n       DATEDIFF(l.end_date, CURDATE()) AS \"Jours restants:Int:120\",\n       l.notice_period AS \"Preavis (j):Int:100\",\n       (SELECT SUM(li.amount) FROM `tabLease Item` li WHERE li.parent=l.name) AS \"Loyer XAF:Currency:130\"\nFROM `tabLease` l WHERE l.lease_status='Active' ORDER BY l.end_date",
+  "doctype": "Report",
+  "roles": [
+   {
+    "role": "System Manager",
+    "doctype": "Has Role"
+   }
+  ]
+ },
+ {
+  "name": "Taux d occupation",
+  "report_name": "Taux d occupation",
+  "ref_doctype": "Property",
+  "is_standard": "No",
+  "module": "Immobilier",
+  "report_type": "Query Report",
+  "letter_head": "Company Letterhead - Grey",
+  "add_total_row": 0,
+  "disabled": 0,
+  "prepared_report": 0,
+  "disable_prepared_report_automation": 0,
+  "add_translate_data": 0,
+  "timeout": 0,
+  "query": "SELECT COALESCE(parent_property,'Autonome') AS \"Immeuble:Link/Property:180\",\n       COUNT(*) AS \"Unites:Int:80\",\n       SUM(status='On Lease') AS \"Louees:Int:80\",\n       SUM(status='Available') AS \"Libres:Int:80\",\n       ROUND(100*SUM(status='On Lease')/COUNT(*),1) AS \"Occupation %%:Float:110\",\n       SUM(rent) AS \"Loyer potentiel XAF:Currency:160\",\n       SUM(CASE WHEN status='On Lease' THEN rent ELSE 0 END) AS \"Loyer effectif XAF:Currency:160\"\nFROM `tabProperty` WHERE is_group=0 GROUP BY COALESCE(parent_property,'Autonome')",
+  "doctype": "Report",
+  "roles": [
+   {
+    "role": "System Manager",
+    "doctype": "Has Role"
+   }
+  ]
+ },
+ {
+  "name": "Rent Roll Immobilier",
+  "report_name": "Rent Roll Immobilier",
+  "ref_doctype": "Lease",
+  "is_standard": "No",
+  "module": "Immobilier",
+  "report_type": "Query Report",
+  "letter_head": "Company Letterhead - Grey",
+  "add_total_row": 0,
+  "disabled": 0,
+  "prepared_report": 0,
+  "disable_prepared_report_automation": 0,
+  "add_translate_data": 0,
+  "timeout": 0,
+  "query": "SELECT COALESCE(p.parent_property,'Autonome') AS \"Immeuble:Link/Property:150\",\n       l.property AS \"Unite:Link/Property:110\",\n       p.type AS \"Type:Link/Unit Type:90\",\n       p.builtup_area AS \"Surface m2:Float:95\",\n       l.customer AS \"Locataire:Link/Customer:200\",\n       l.start_date AS \"Debut:Date:95\", l.end_date AS \"Fin:Date:95\",\n       (SELECT SUM(li.amount) FROM `tabLease Item` li WHERE li.parent=l.name) AS \"Total mensuel XAF:Currency:140\",\n       l.security_deposit AS \"Caution XAF:Currency:130\",\n       l.lease_status AS \"Statut::90\"\nFROM `tabLease` l LEFT JOIN `tabProperty` p ON p.name=l.property\nORDER BY COALESCE(p.parent_property,'Autonome'), l.property",
+  "doctype": "Report",
+  "roles": [
+   {
+    "role": "System Manager",
+    "doctype": "Has Role"
+   }
+  ]
+ }
+]
