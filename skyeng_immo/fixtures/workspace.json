@@ -2,6 +2,7 @@
  {
   "name": "Immobilier",
   "label": "Immobilier",
+  "module": "Immobilier",
   "title": "Immobilier",
   "sequence_id": 1.0,
   "type": "Workspace",
