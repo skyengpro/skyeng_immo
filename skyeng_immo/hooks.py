@@ -17,6 +17,45 @@ required_apps = ["erpnext", "propms"]
 after_install = "skyeng_immo.install.after_install"
 after_migrate = "skyeng_immo.install.after_migrate"
 
+# --------------------------------------------------------------------------- #
+# Mon Immo: the landlord and tenant app (doc/EP-01-landlord-tenant-app.md)    #
+# --------------------------------------------------------------------------- #
+
+# The React app (frontend/) is built into public/mon-immo and served by
+# www/mon-immo/index.html; every deep link falls back to that page.
+website_route_rules = [
+	{"from_route": "/mon-immo/<path:app_path>", "to_route": "mon-immo"},
+]
+
+# After the invitation's "set your password" step (and after sign-in), Frappe
+# sends website users to their role's home page: the app.
+role_home_page = {"Landlord": "mon-immo", "Tenant": "mon-immo"}
+
+# Apps screen tile, for landlord and tenant accounts (see access.has_app_permission).
+add_to_apps_screen = [
+	{
+		"name": "skyeng_immo",
+		"logo": "/assets/skyeng_immo/mon-immo/favicon.svg",
+		"title": "Mon Immo",
+		"route": "/mon-immo",
+		"has_permission": "skyeng_immo.mon_immo.access.has_app_permission",
+	}
+]
+
+# "Give access to the app" button on the Customer form.
+doctype_js = {"Customer": "public/js/customer_mon_immo.js"}
+
+doc_events = {
+	"User": {"validate": "skyeng_immo.mon_immo.access.set_default_app"},
+	"Property": {"validate": "skyeng_immo.mon_immo.validation.validate_property"},
+	"Lease": {"validate": "skyeng_immo.mon_immo.validation.validate_lease"},
+	"Payment Entry": {"on_submit": "skyeng_immo.mon_immo.notifications.on_payment_entry_submit"},
+}
+
+scheduler_events = {
+	"daily": ["skyeng_immo.mon_immo.notifications.send_due_reminders"],
+}
+
 # Fixtures ship the dashboard so a fresh install brings the whole thing, not
 # just empty DocTypes. Order matters: cards, charts and reports must exist
 # before the Workspace that references them.

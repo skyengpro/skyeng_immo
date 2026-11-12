@@ -1,0 +1,29 @@
+Not found,Introuvable
+Owner missing,Propriétaire manquant
+Please choose the home concerned.,Choisissez le logement concerné.
+Please describe the problem.,Décrivez le problème.
+Role must be Landlord or Tenant.,Le rôle doit être Propriétaire ou Locataire.
+"Row {0}: {1} is paid by {2}, but the tenant of this lease is {3}.","Ligne {0} : {1} est payé par {2}, mais le locataire de ce bail est {3}."
+Several customers on one lease,Plusieurs clients sur un même bail
+The photo could not be read.,La photo n'a pas pu être lue.
+The photo is too large.,La photo est trop lourde.
+"The photo must be a JPEG, PNG or WebP image.","La photo doit être une image JPEG, PNG ou WebP."
+Too many requests in one hour. Please call your property manager.,Trop de demandes en une heure. Appelez votre gestionnaire.
+Unsupported language,Langue non prise en charge
+You do not have access to this page.,Vous n'avez pas accès à cette page.
+{0} is not a valid email address.,{0} n'est pas une adresse e-mail valide.
+Please set the owner (Unit Owner) of {0}. Use the company's own Customer when it owns the property.,Renseignez le propriétaire (Unit Owner) de {0}. Utilisez le client de la société elle-même quand elle possède le bien.
+A lease has a single tenant: Customer ({0}) and Lease Customer ({1}) must be the same.,Un bail n'a qu'un seul locataire : Customer ({0}) et Lease Customer ({1}) doivent être identiques.
+"The account is ready, but the invitation could not be sent: no outgoing email account is set up.","Le compte est prêt, mais l'invitation n'a pas pu partir : aucun compte e-mail sortant n'est configuré."
+A landlord,Un propriétaire
+A tenant,Un locataire
+Email,E-mail
+Give access to the Mon Immo app,Donner accès à l'application Mon Immo
+Invitation not sent,Invitation non envoyée
+Invitation sent to {0},Invitation envoyée à {0}
+Language of the app and emails,Langue de l'application et des e-mails
+Mon Immo access,Accès Mon Immo
+Send the invitation,Envoyer l'invitation
+This customer is,Ce client est
+{0} already uses the app. Access updated.,{0} utilise déjà l'application. Accès mis à jour.
+"An invitation email lets the person choose a password, then opens the app.","Un e-mail d'invitation permet à la personne de choisir son mot de passe, puis ouvre l'application."
