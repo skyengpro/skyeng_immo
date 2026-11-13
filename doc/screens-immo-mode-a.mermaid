@@ -1,0 +1,80 @@
+---
+title: "Mode A, Sky owns an instance: app screens and flows with the desk"
+---
+flowchart TB
+    classDef desk fill:#f3eefb,stroke:#7a5bc0,color:#2f2350,text-align:left
+    classDef bailleur fill:#e8f0fe,stroke:#3b6fd6,color:#1a2b4c,text-align:left
+    classDef locataire fill:#e3f4ec,stroke:#2e8b62,color:#173d2c,text-align:left
+    classDef commun fill:#fdf3e1,stroke:#c08a2e,color:#4a3510,text-align:left
+    classDef legende fill:#ffffff,stroke:#9a9a9a,color:#333333,text-align:left
+
+    subgraph DSK["Desk: Sky staff (System Manager / Property Manager)"]
+        D1["<b>Landlords</b><br/>- One Customer per landlord<br/>- All under Sky's single company"]
+        D2["<b>Properties</b><br/>- Tree: building, then units<br/>- Owner (unit_owner) on every property"]
+        D3["<b>Leases and schedules</b><br/>- Tenant, rent, frequency, deposit<br/>- Invoices generated daily<br/>by PropMS, then submitted"]
+        D4["<b>Accounts</b><br/>- Landlord account, tenant accounts<br/>- Invitations sent"]
+        D5["<b>Payments received</b><br/>- Recorded against the invoice<br/>(cash, transfer, MoMo outside the app)"]
+        D6["<b>Maintenance requests</b><br/>- Handling and status updates"]
+    end
+
+    MAIL["<b>Emails</b><br/>- Invitation<br/>- Reminder before due date (tenant)<br/>- Receipt (tenant)<br/>- Payment notice (landlord)"]
+
+    C0["<b>Sign in</b><br/>- Invitation link, then email and password<br/>- The role picks the home screen"]
+
+    subgraph BAI["App: landlord (read-only)"]
+        B1["<b>1. Home</b><br/>- Number of properties and tenants<br/>- Collected this month, total unpaid<br/>- Overdue invoices"]
+        B2["<b>2. My properties</b><br/>- Tree by building<br/>- Per unit: status, tenant, rent"]
+        B3["<b>3. Property</b><br/>- Current lease, tenants, move-in date<br/>- Deposit, schedule<br/>- Paid and due invoices, past leases"]
+        B4["<b>4. Tenant</b><br/>- Lease terms<br/>- Payments: dates and amounts<br/>- Invoices due, PDF download"]
+        B5["<b>5. Account</b><br/>- Language"]
+    end
+
+    subgraph LOC["App: tenant"]
+        L1["<b>1. Home</b><br/>- Balance due, next due date<br/>- Latest maintenance request"]
+        L2["<b>2. My lease</b><br/>- Unit, dates, rent and frequency<br/>- Deposit<br/>- Schedule with the status of each line"]
+        L3["<b>3. Invoices and receipts</b><br/>- To pay, paid<br/>- Detail, PDF download"]
+        L4["<b>4. Maintenance</b><br/>- New request with photo<br/>- List of requests and status"]
+        L5["<b>5. Account</b><br/>- Language"]
+    end
+
+    %% Onboarding
+    D1 --> D2 --> D3
+    D3 --> D4
+    D4 -.->|Invitation| MAIL
+    MAIL -.->|Link| C0
+    C0 -->|Landlord role| B1
+    C0 -->|Tenant role| L1
+
+    %% Landlord path
+    B1 -->|My properties| B2
+    B2 -->|A property| B3
+    B3 -->|A tenant| B4
+    B1 -->|Overdue invoice| B4
+    B1 -.-> B5
+
+    %% Tenant path
+    L1 -->|My lease| L2
+    L1 -->|Invoices| L3
+    L1 -->|Maintenance| L4
+    L1 -.-> L5
+
+    %% Data that changes
+    D3 ==>|New invoice| L3
+    D3 ==>|New invoice| B3
+    D5 ==>|Invoice paid, receipt| L3
+    D5 ==>|Payment visible| B4
+    D5 -.->|Receipt and payment notice| MAIL
+    D3 -.->|Reminder before due date| MAIL
+    L4 ==>|Request created| D6
+    D6 -.->|Status updated| L4
+
+    LEG["<b>Reading</b><br/>- Plain arrow: move from one screen to another<br/>- Thick arrow: data changes<br/>- Dotted: email, invitation or feedback<br/>- Each landlord sees only their properties.<br/>Several landlords share the same site."]
+
+    class D1,D2,D3,D4,D5,D6 desk
+    class B1,B2,B3,B4,B5 bailleur
+    class L1,L2,L3,L4,L5 locataire
+    class C0,MAIL commun
+    class LEG legende
+    style DSK fill:#faf8fd,stroke:#7a5bc0,stroke-width:1px
+    style BAI fill:#f7f9fe,stroke:#3b6fd6,stroke-width:1px
+    style LOC fill:#f5fbf8,stroke:#2e8b62,stroke-width:1px
