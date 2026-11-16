@@ -1,0 +1,23 @@
+title = "skyeng_immo gitleaks config"
+
+# Gitleaks' default ruleset: generic API keys, cloud credentials, private keys, tokens.
+[extend]
+useDefault = true
+
+# Credentials embedded in a URL (e.g. https://user:token@github.com/...),
+# typically pasted from a git remote or a deploy script.
+[[rules]]
+id = "credentials-in-url"
+description = "Username and password/token embedded in a URL"
+regex = '''[a-zA-Z][a-zA-Z0-9+.-]*://[^\s/:@"']+:[^\s/:@"']{8,}@[^\s/"']+'''
+tags = ["url", "credentials"]
+
+# Docs and Markdown are scanned too. Only test fixtures are exempt.
+[allowlist]
+description = "Test fixtures and placeholder domains, not production credentials"
+paths = [
+  '''(?i)/?tests?/fixtures/.*''',
+]
+regexes = [
+  '''(?i)example\.com''',
+]
