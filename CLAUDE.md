@@ -115,5 +115,5 @@ PRs target `develop`.
 ## Done means
 
 Site tests green (including a test that one landlord or tenant cannot read another's data), linters
-green (pre-commit, packaging guard, gitleaks, semgrep, pip-audit), docs updated, and the invariants above checked
-on the diff.
+green (pre-commit, packaging guard, gitleaks, semgrep, pip-audit), docs updated, and the invariants
+above checked on the diff.
