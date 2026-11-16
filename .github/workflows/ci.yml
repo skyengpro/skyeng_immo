@@ -1,38 +1,122 @@
 name: CI
 
 on:
-  push:
-    branches: [main]
   pull_request:
+    branches:
+      - develop
+      - main
+  push:
+    branches:
+      - develop
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  static:
-    name: Static checks
+  tests:
     runs-on: ubuntu-latest
+    name: Server (Frappe version-16, ERPNext, PropMS)
+
+    services:
+      redis-cache:
+        image: redis:alpine
+        ports:
+          - 13000:6379
+      redis-queue:
+        image: redis:alpine
+        ports:
+          - 11000:6379
+      mariadb:
+        image: mariadb:11.8
+        env:
+          MYSQL_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: --health-cmd="mariadb-admin ping" --health-interval=5s --health-timeout=2s --health-retries=3
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - name: Clone
+        uses: actions/checkout@v7
+
+      - name: Setup Python
+        uses: actions/setup-python@v7
         with:
-          python-version: "3.11"
+          python-version: '3.14'
 
-      - name: Compile every module
-        run: python -m compileall -q skyeng_immo
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          check-latest: true
 
-      - name: Validate DocType JSON
-        run: python scripts/validate_doctypes.py
+      # bench installs apps with uv, so its cache is the one worth keeping.
+      - name: Cache uv
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/uv
+          key: ${{ runner.os }}-uv-${{ hashFiles('**/pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-uv-
 
-      - name: Lint
+      - name: Install MariaDB client
         run: |
-          pip install ruff==0.6.9
-          ruff check skyeng_immo
-          ruff format --check skyeng_immo
+          sudo apt update
+          sudo apt-get install -y mariadb-client
 
-      - name: Packaging guard
-        # frappe/erpnext/propms must never appear as pip dependencies: uv then
-        # resolves the framework, whose pypika git pin it rejects, and the
-        # Press image build dies with exit 167.
+      - name: Init bench
         run: |
-          if grep -qE '^\s*"?(frappe|erpnext|propms)"?\s*[,=]' pyproject.toml; then
-            echo "::error::framework packages must not be pip dependencies"; exit 1
-          fi
-          echo "packaging OK"
+          pip install frappe-bench
+          bench init \
+            --skip-redis-config-generation \
+            --skip-assets \
+            --python "$(which python)" \
+            --frappe-branch version-16 \
+            ~/frappe-bench
+
+      - name: Get apps
+        working-directory: /home/runner/frappe-bench
+        run: |
+          # required_apps in hooks.py: Occupant, Visitor Log, Vehicle and Parking Space
+          # link to PropMS Property / Lease, and the equipment layer extends ERPNext Asset.
+          bench get-app erpnext --branch version-16
+          bench get-app propms https://github.com/Aakvatech-Limited/PropMS --branch version-16
+          bench get-app skyeng_immo "$GITHUB_WORKSPACE"
+          bench setup requirements --dev
+
+      - name: Create site and install apps
+        working-directory: /home/runner/frappe-bench
+        run: |
+          bench new-site --db-root-password root --admin-password admin test_site
+          bench --site test_site install-app erpnext
+          bench --site test_site install-app propms
+          bench --site test_site install-app skyeng_immo
+        env:
+          CI: 'Yes'
+
+      - name: Run tests
+        working-directory: /home/runner/frappe-bench
+        run: |
+          bench --site test_site set-config allow_tests true
+          bench --site test_site run-tests --app skyeng_immo
+        env:
+          TYPE: server
+
+      # Drops wheels uv can rebuild quickly, keeping the saved cache small.
+      - name: Prune uv cache
+        if: always()
+        run: uv cache prune --ci || true
+
+      - name: Show bench logs on failure
+        if: failure()
+        working-directory: /home/runner/frappe-bench
+        run: |
+          cat bench_start.log 2>/dev/null || true
+          for f in logs/*.log; do
+            echo "== $f =="
+            cat "$f"
+          done
