@@ -1,6 +1,6 @@
-"""Mon Immo access rules and screens, on a site with two landlords (EP-01 definition of done).
+"""Sky Immo access rules and screens, on a site with two landlords (EP-01 definition of done).
 
-Run with: ``CI=1 bench --site <site> run-tests --module skyeng_immo.mon_immo.test_mon_immo``
+Run with: ``CI=1 bench --site <site> run-tests --module skyeng_immo.sky_immo.test_sky_immo``
 Everything is created inside the test transaction and rolled back.
 """
 
@@ -10,10 +10,10 @@ import frappe
 from frappe.tests import IntegrationTestCase
 from frappe.utils import add_days, add_months, get_first_day, getdate, today
 
-from skyeng_immo.mon_immo import api
-from skyeng_immo.mon_immo.access import app_role, get_scope
-from skyeng_immo.mon_immo.invite import invite_to_app
-from skyeng_immo.mon_immo.notifications import send_due_reminders, send_payment_emails
+from skyeng_immo.sky_immo import api
+from skyeng_immo.sky_immo.access import app_role, get_scope
+from skyeng_immo.sky_immo.invite import invite_to_app
+from skyeng_immo.sky_immo.notifications import send_due_reminders, send_payment_emails
 
 PREFIX = "MI-TEST"
 # 1×1 transparent PNG.
@@ -131,7 +131,7 @@ def _pay(invoice: str) -> str:
 	return pe.name
 
 
-class TestMonImmo(IntegrationTestCase):
+class TestSkyImmo(IntegrationTestCase):
 	@classmethod
 	def setUpClass(cls):
 		super().setUpClass()
@@ -208,6 +208,19 @@ class TestMonImmo(IntegrationTestCase):
 		self.assertEqual(app_role(self.user_t1), "tenant")
 		self.assertEqual(app_role(self.user_pm), "manager")
 		self.assertIsNone(app_role("Guest"))
+
+	def test_desk_icon_for_every_app_user(self):
+		from frappe.apps import get_apps
+
+		from skyeng_immo.sky_immo.access import has_app_permission
+
+		for user in (self.user_pm, self.user_a, self.user_t1):
+			self.as_user(user)
+			self.assertTrue(has_app_permission(), user)
+		route = next(app["route"] for app in get_apps() if app["name"] == "skyeng_immo")
+		self.assertEqual(route, "/sky-immo")
+		self.as_user("Guest")
+		self.assertFalse(has_app_permission())
 
 	def test_session(self):
 		self.as_user(self.user_t1)

@@ -1,6 +1,6 @@
 {
   "private": true,
-  "description": "Builds the Mon Immo frontend (frontend/) during `bench build`.",
+  "description": "Builds the Sky Immo frontend (frontend/) during `bench build`.",
   "scripts": {
     "postinstall": "cd frontend && npm ci --no-audit --no-fund",
     "dev": "cd frontend && npm run dev",

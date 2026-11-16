@@ -1,4 +1,4 @@
-"""Endpoints of the Mon Immo app, called from the React frontend.
+"""Endpoints of the Sky Immo app, called from the React frontend.
 
 Each one reads the signed-in user's scope first (:mod:`.access`) and only
 ever returns records inside it. Landlords and tenants have no other access
@@ -374,7 +374,7 @@ def download(kind: str, name: str):
 				# PDF engine down or misconfigured (wkhtmltopdf cannot reach the site):
 				# the person still gets their document, as a printable page.
 				frappe.clear_last_message()
-				frappe.log_error(f"Mon Immo: PDF of {doctype} {name}, falling back to HTML")
+				frappe.log_error(f"Sky Immo: PDF of {doctype} {name}, falling back to HTML")
 				from werkzeug.wrappers import Response
 
 				html = frappe.get_print(doctype, name)

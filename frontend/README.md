@@ -1,7 +1,7 @@
-# Mon Immo frontend
+# Sky Immo frontend
 
-React + Vite + Tailwind app served by the Frappe site at `/mon-immo`. Adapted from the
-prototype in `doc/mon-immo`, connected to the real backend (`skyeng_immo/mon_immo/api.py`).
+React + Vite + Tailwind app served by the Frappe site at `/sky-immo`. Adapted from the
+prototype in `doc/mon-immo`, connected to the real backend (`skyeng_immo/sky_immo/api.py`).
 
 - `src/data/api.ts` is the only door to the server; `src/data/types.ts` mirrors its answers.
 - `src/features/owner` are the landlord screens (also used by staff), `src/features/tenant` the tenant ones.

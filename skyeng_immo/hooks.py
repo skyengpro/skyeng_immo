@@ -18,42 +18,48 @@ after_install = "skyeng_immo.install.after_install"
 after_migrate = "skyeng_immo.install.after_migrate"
 
 # --------------------------------------------------------------------------- #
-# Mon Immo: the landlord and tenant app (doc/EP-01-landlord-tenant-app.md)    #
+# Sky Immo: the landlord and tenant app (doc/EP-01-landlord-tenant-app.md)    #
 # --------------------------------------------------------------------------- #
 
-# The React app (frontend/) is built into public/mon-immo and served by
-# www/mon-immo/index.html; every deep link falls back to that page.
+# The React app (frontend/) is built into public/sky-immo and served by
+# www/sky-immo/index.html; every deep link falls back to that page.
 website_route_rules = [
-	{"from_route": "/mon-immo/<path:app_path>", "to_route": "mon-immo"},
+	{"from_route": "/sky-immo/<path:app_path>", "to_route": "sky-immo"},
+]
+
+# The app used to live at /mon-immo: keep old links and bookmarks working.
+website_redirects = [
+	{"source": r"/mon-immo(/.*)?", "target": r"/sky-immo\1"},
 ]
 
 # After the invitation's "set your password" step (and after sign-in), Frappe
 # sends website users to their role's home page: the app.
-role_home_page = {"Landlord": "mon-immo", "Tenant": "mon-immo"}
+role_home_page = {"Landlord": "sky-immo", "Tenant": "sky-immo"}
 
-# Apps screen tile, for landlord and tenant accounts (see access.has_app_permission).
+# Icon on the desk's apps screen and in the sidebar app switcher, for staff, landlords
+# and tenants (see access.has_app_permission).
 add_to_apps_screen = [
 	{
 		"name": "skyeng_immo",
-		"logo": "/assets/skyeng_immo/mon-immo/favicon.svg",
-		"title": "Mon Immo",
-		"route": "/mon-immo",
-		"has_permission": "skyeng_immo.mon_immo.access.has_app_permission",
+		"logo": "/assets/skyeng_immo/sky-immo/favicon.svg",
+		"title": "Sky Immo",
+		"route": "/sky-immo",
+		"has_permission": "skyeng_immo.sky_immo.access.has_app_permission",
 	}
 ]
 
 # "Give access to the app" button on the Customer form.
-doctype_js = {"Customer": "public/js/customer_mon_immo.js"}
+doctype_js = {"Customer": "public/js/customer_sky_immo.js"}
 
 doc_events = {
-	"User": {"validate": "skyeng_immo.mon_immo.access.set_default_app"},
-	"Property": {"validate": "skyeng_immo.mon_immo.validation.validate_property"},
-	"Lease": {"validate": "skyeng_immo.mon_immo.validation.validate_lease"},
-	"Payment Entry": {"on_submit": "skyeng_immo.mon_immo.notifications.on_payment_entry_submit"},
+	"User": {"validate": "skyeng_immo.sky_immo.access.set_default_app"},
+	"Property": {"validate": "skyeng_immo.sky_immo.validation.validate_property"},
+	"Lease": {"validate": "skyeng_immo.sky_immo.validation.validate_lease"},
+	"Payment Entry": {"on_submit": "skyeng_immo.sky_immo.notifications.on_payment_entry_submit"},
 }
 
 scheduler_events = {
-	"daily": ["skyeng_immo.mon_immo.notifications.send_due_reminders"],
+	"daily": ["skyeng_immo.sky_immo.notifications.send_due_reminders"],
 }
 
 # Fixtures ship the dashboard so a fresh install brings the whole thing, not

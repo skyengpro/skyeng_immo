@@ -1,4 +1,4 @@
-// Shapes returned by skyeng_immo/mon_immo/api.py. Each one notes the Frappe / PropMS / ERPNext source.
+// Shapes returned by skyeng_immo/sky_immo/api.py. Each one notes the Frappe / PropMS / ERPNext source.
 
 export type Lang = 'fr' | 'en';
 

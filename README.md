@@ -11,11 +11,12 @@ PropMS models the *lease* (one Customer per unit). It has no notion of the
 people in the unit, so access control and gate registers are impossible on it
 alone. This app adds that layer without modifying PropMS.
 
-## Mon Immo: the landlord and tenant app
+## Sky Immo: the landlord and tenant app
 
 A simple app, on phone, tablet and desktop, where landlords and tenants follow what
 staff record in the PropMS desk (scope: [doc/EP-01-landlord-tenant-app.md](doc/EP-01-landlord-tenant-app.md)).
-It is served by the site at **`/mon-immo`**. French and English.
+It is served by the site at **`/sky-immo`** (old `/mon-immo` links redirect there). French and English.
+Staff open it from the **Sky Immo** icon on the desk's apps screen (or the sidebar's *Applications* menu).
 
 | Who | Role | Sees in the app |
 |---|---|---|
@@ -25,14 +26,14 @@ It is served by the site at **`/mon-immo`**. French and English.
 
 The app is read-only, apart from the tenant's maintenance request (an ERPNext `Issue`).
 Landlords and tenants have no permission on any doctype: everything goes through
-`skyeng_immo/mon_immo/api.py`, which filters by the signed-in user (`mon_immo/access.py`).
+`skyeng_immo/sky_immo/api.py`, which filters by the signed-in user (`sky_immo/access.py`).
 
 ### Give someone access (desk)
 
 1. Data entry rules, checked on save: every **Property** has a `unit_owner` (use the
    company's own Customer for its own properties); a **Lease** has a single Customer,
    used as tenant and as payer on every lease line.
-2. Open the landlord's or tenant's **Customer** › **Mon Immo access**: choose *tenant* or
+2. Open the landlord's or tenant's **Customer** › **Sky Immo access**: choose *tenant* or
    *landlord*, the email and the language. This creates the account, links it in the
    Customer's *Portal Users*, and sends Frappe's invitation email. The link lets the person
    choose a password; Frappe then opens the app.
@@ -49,30 +50,30 @@ desk says the invitation could not be sent; click again once email is set up.
 | Receipt (PDF attached) | A Payment Entry against a rent invoice is submitted | Tenant |
 | Payment notice | Same | Each landlord, about their own invoices only; property managers for the company's own properties |
 
-Wording is in the Email Templates `Mon Immo - … (fr|en)`, editable in the desk. Each
+Wording is in the Email Templates `Sky Immo - … (fr|en)`, editable in the desk. Each
 person gets the email in their account's language.
 
 ### Build and develop
 
 `bench build --app skyeng_immo` builds the frontend (`frontend/`, React + Vite) into
-`skyeng_immo/public/mon-immo` and writes `skyeng_immo/www/mon-immo/index.html`. Both are
+`skyeng_immo/public/sky-immo` and writes `skyeng_immo/www/sky-immo/index.html`. Both are
 build output and not committed.
 
 ```bash
 cd apps/skyeng_immo/frontend
 npm install
-FRAPPE_SITE=immo.localhost npm run dev   # http://localhost:8080/mon-immo, API proxied to the bench on :8001
+FRAPPE_SITE=immo.localhost npm run dev   # http://localhost:8080/sky-immo, API proxied to the bench on :8001
 npm run check:i18n                       # fr.json and en.json complete
 ```
 
 ### Tests and demo data
 
 ```bash
-CI=1 bench --site <site> run-tests --module skyeng_immo.mon_immo.test_mon_immo
-bench --site <site> execute skyeng_immo.mon_immo.demo.create_demo_data   # developer_mode sites only
-bench --site <site> execute skyeng_immo.mon_immo.demo.delete_demo_data
+CI=1 bench --site <site> run-tests --module skyeng_immo.sky_immo.test_sky_immo
+bench --site <site> execute skyeng_immo.sky_immo.demo.create_demo_data   # developer_mode sites only
+bench --site <site> execute skyeng_immo.sky_immo.demo.delete_demo_data
 ```
 
 The tests build a site with two landlords and check that neither sees the other's
 properties, leases, invoices, receipts or payment notices. The demo data creates two
-landlords and three tenants; the accounts are listed in `mon_immo/demo.py` (password `demo1234`).
+landlords and three tenants; the accounts are listed in `sky_immo/demo.py` (password `demo1234`).

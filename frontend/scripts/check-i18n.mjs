@@ -36,7 +36,7 @@ for (const key of flat.fr.keys()) {
   if (key.endsWith('_one') && !flat.fr.has(key.replace(/_one$/, '_other'))) errors.push(`${key} : forme _other manquante`);
 }
 
-// Clés construites dans le code (t(`status.${kind}.${value}`), etc.) : valeurs reprises de src/data/types.ts et de skyeng_immo/mon_immo/data.py.
+// Clés construites dans le code (t(`status.${kind}.${value}`), etc.) : valeurs reprises de src/data/types.ts et de skyeng_immo/sky_immo/data.py.
 const ENUMS = {
   'status.invoice': ['paid', 'due', 'overdue', 'partly_paid'],
   'status.schedule': ['paid', 'due', 'overdue', 'partly_paid', 'upcoming'],

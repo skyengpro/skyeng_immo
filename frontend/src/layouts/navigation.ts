@@ -2,7 +2,7 @@ import { Building2, FileText, House, ReceiptText, UserRound, Wrench, type Lucide
 import type { Role } from '@/data/types';
 
 /** Where the Frappe site serves the app (hooks.py: website_route_rules). */
-export const APP_ROUTE = '/mon-immo';
+export const APP_ROUTE = '/sky-immo';
 
 export interface NavItem {
   to: string;

@@ -43,11 +43,11 @@ ROLES = [
 	("Technicien", "Interventions et maintenance des equipements."),
 ]
 
-# Mon Immo app roles. No desk access: landlords and tenants only use /mon-immo,
-# and read their data through skyeng_immo.mon_immo.api, never through doctypes.
+# Sky Immo app roles. No desk access: landlords and tenants only use /sky-immo,
+# and read their data through skyeng_immo.sky_immo.api, never through doctypes.
 APP_ROLES = [
-	("Landlord", "Mon Immo: proprietaire, voit ses biens, baux, factures et paiements."),
-	("Tenant", "Mon Immo: locataire, voit son bail et ses factures, signale un probleme."),
+	("Landlord", "Sky Immo: proprietaire, voit ses biens, baux, factures et paiements."),
+	("Tenant", "Sky Immo: locataire, voit son bail et ses factures, signale un probleme."),
 ]
 
 
@@ -62,7 +62,7 @@ def after_migrate():
 def setup():
 	create_roles()
 	install_asset_fields()
-	setup_mon_immo()
+	setup_sky_immo()
 
 
 def create_roles():
@@ -75,10 +75,10 @@ def create_roles():
 			).insert(ignore_permissions=True)
 
 
-def setup_mon_immo():
+def setup_sky_immo():
 	"""Issue types and priorities the tenant's request form maps to, and the email templates."""
-	from skyeng_immo.mon_immo.data import ISSUE_CATEGORIES
-	from skyeng_immo.mon_immo.notifications import ensure_email_templates
+	from skyeng_immo.sky_immo.data import ISSUE_CATEGORIES
+	from skyeng_immo.sky_immo.notifications import ensure_email_templates
 
 	if frappe.db.exists("DocType", "Issue Type"):
 		for issue_type in ISSUE_CATEGORIES.values():

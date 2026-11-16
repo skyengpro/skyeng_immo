@@ -1,13 +1,13 @@
-// Customer form: give the landlord or the tenant access to the Mon Immo app.
+// Customer form: give the landlord or the tenant access to the Sky Immo app.
 // Creates the account, links it to this Customer (Portal Users) and sends the invitation email.
 frappe.ui.form.on("Customer", {
 	refresh(frm) {
 		if (frm.is_new()) return;
 		if (!frappe.user.has_role("System Manager") && !frappe.user.has_role("Property Manager")) return;
 
-		frm.add_custom_button(__("Mon Immo access"), () => {
+		frm.add_custom_button(__("Sky Immo access"), () => {
 			const dialog = new frappe.ui.Dialog({
-				title: __("Give access to the Mon Immo app"),
+				title: __("Give access to the Sky Immo app"),
 				fields: [
 					{
 						fieldname: "role",
@@ -48,7 +48,7 @@ frappe.ui.form.on("Customer", {
 				primary_action_label: __("Send the invitation"),
 				primary_action(values) {
 					frappe.call({
-						method: "skyeng_immo.mon_immo.invite.invite_to_app",
+						method: "skyeng_immo.sky_immo.invite.invite_to_app",
 						args: { customer: frm.doc.name, ...values },
 						freeze: true,
 						callback({ message }) {

@@ -3,6 +3,6 @@ __pycache__/
 *.egg-info
 node_modules/
 
-# Mon Immo frontend build output: produced by `bench build` (root package.json → frontend/).
-skyeng_immo/public/mon-immo/
-skyeng_immo/www/mon-immo/index.html
+# Sky Immo frontend build output: produced by `bench build` (root package.json → frontend/).
+skyeng_immo/public/sky-immo/
+skyeng_immo/www/sky-immo/index.html

@@ -18,11 +18,11 @@ A lease has a single tenant: Customer ({0}) and Lease Customer ({1}) must be the
 A landlord,Un propriétaire
 A tenant,Un locataire
 Email,E-mail
-Give access to the Mon Immo app,Donner accès à l'application Mon Immo
+Give access to the Sky Immo app,Donner accès à l'application Sky Immo
 Invitation not sent,Invitation non envoyée
 Invitation sent to {0},Invitation envoyée à {0}
 Language of the app and emails,Langue de l'application et des e-mails
-Mon Immo access,Accès Mon Immo
+Sky Immo access,Accès Sky Immo
 Send the invitation,Envoyer l'invitation
 This customer is,Ce client est
 {0} already uses the app. Access updated.,{0} utilise déjà l'application. Accès mis à jour.

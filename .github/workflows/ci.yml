@@ -38,7 +38,7 @@ jobs:
           echo "packaging OK"
 
   frontend:
-    name: Mon Immo frontend
+    name: Sky Immo frontend
     runs-on: ubuntu-latest
     defaults:
       run:

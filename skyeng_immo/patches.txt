@@ -1,0 +1,4 @@
+[pre_model_sync]
+
+[post_model_sync]
+skyeng_immo.patches.rename_mon_immo_to_sky_immo

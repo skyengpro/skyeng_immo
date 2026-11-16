@@ -1,4 +1,4 @@
-"""Who sees what in Mon Immo.
+"""Who sees what in Sky Immo.
 
 Every app endpoint starts from :func:`get_scope`, and every list it returns is
 filtered by the scope. This is the only separation between landlords who
@@ -185,20 +185,17 @@ APP_NAME = "skyeng_immo"
 
 
 def has_app_permission() -> bool:
-	"""Mon Immo tile on Frappe's apps screen: shown to landlord and tenant accounts.
+	"""Sky Immo icon on the desk's apps screen and in the sidebar app switcher.
 
-	Staff are left out on purpose: listing a non-desk app for them would change
-	where Frappe sends them after sign-in (/apps instead of /desk). They open
-	/mon-immo directly.
+	Shown to staff (they open the app from the desk) and to landlord and tenant
+	accounts. Staff still land on /desk after sign-in: Frappe sends system users
+	to their home page, not to the apps screen.
 	"""
-	user = frappe.session.user
-	if user == "Guest" or frappe.get_cached_value("User", user, "user_type") != "Website User":
-		return False
-	return app_role(user) in ("owner", "tenant")
+	return app_role() is not None
 
 
 def set_default_app(doc, method=None):
-	"""User.validate: landlord and tenant accounts open Mon Immo after sign-in and after setting a password.
+	"""User.validate: landlord and tenant accounts open Sky Immo after sign-in and after setting a password.
 
 	Without it, Frappe's login sends website users to the first app on the apps
 	screen, which can be a desk app they cannot use (PropMS).

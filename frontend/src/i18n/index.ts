@@ -6,7 +6,7 @@ import { readStorage, writeStorage } from '@/lib/storage';
 import en from './en.json';
 import fr from './fr.json';
 
-const STORAGE_KEY = 'mon-immo:lang';
+const STORAGE_KEY = 'sky-immo:lang';
 
 // Both files must have exactly the same keys: the compiler checks it.
 const enMatchesFr: typeof fr = en;

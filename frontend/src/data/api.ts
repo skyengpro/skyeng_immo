@@ -1,5 +1,5 @@
 // Data access layer. Screens only go through this file.
-// Every call is a whitelisted method of skyeng_immo/mon_immo/api.py on the Frappe site,
+// Every call is a whitelisted method of skyeng_immo/sky_immo/api.py on the Frappe site,
 // authenticated by the Frappe session cookie (same origin).
 import type {
   InvoiceDetail,
@@ -31,7 +31,7 @@ export class ApiError extends Error {
 }
 
 const METHOD = '/api/method/';
-const APP = 'skyeng_immo.mon_immo.api.';
+const APP = 'skyeng_immo.sky_immo.api.';
 
 let csrfToken: string | null = null;
 

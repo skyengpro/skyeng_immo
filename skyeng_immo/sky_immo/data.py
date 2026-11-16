@@ -1,7 +1,7 @@
 """Read models for the app screens, built from PropMS and ERPNext records.
 
 Nothing here checks permissions: callers pass names that already went
-through :mod:`skyeng_immo.mon_immo.access`. Reads use ``ignore_permissions``
+through :mod:`skyeng_immo.sky_immo.access`. Reads use ``ignore_permissions``
 because landlords and tenants have no doctype permission at all.
 """
 

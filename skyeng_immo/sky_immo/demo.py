@@ -1,7 +1,7 @@
-"""Demo data for presenting Mon Immo on a development site: two landlords, three tenants.
+"""Demo data for presenting Sky Immo on a development site: two landlords, three tenants.
 
-    bench --site <site> execute skyeng_immo.mon_immo.demo.create_demo_data
-    bench --site <site> execute skyeng_immo.mon_immo.demo.delete_demo_data
+    bench --site <site> execute skyeng_immo.sky_immo.demo.create_demo_data
+    bench --site <site> execute skyeng_immo.sky_immo.demo.delete_demo_data
 
 Every record is named with the DEMO prefix and removed by ``delete_demo_data``.
 Accounts (password ``demo1234``):
@@ -338,7 +338,7 @@ def create_demo_data():
 		issue.db_set("status", in_progress)
 
 	frappe.db.commit()
-	print("Mon Immo demo data ready. Password for every account:", PASSWORD)
+	print("Sky Immo demo data ready. Password for every account:", PASSWORD)
 
 
 def delete_demo_data():
@@ -380,4 +380,4 @@ def delete_demo_data():
 		if frappe.db.exists("Item", code):
 			frappe.delete_doc("Item", code, force=True, ignore_permissions=True)
 	frappe.db.commit()
-	print("Mon Immo demo data removed.")
+	print("Sky Immo demo data removed.")

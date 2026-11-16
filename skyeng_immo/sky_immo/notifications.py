@@ -1,4 +1,4 @@
-"""The three Mon Immo emails that follow invoices and payments (EP-01, "Emails").
+"""The three Sky Immo emails that follow invoices and payments (EP-01, "Emails").
 
 * reminder to the tenant a few days before a due date (daily job);
 * receipt to the tenant when a payment is recorded in the desk;
@@ -7,7 +7,7 @@
 The invitation is Frappe's own welcome email (see :mod:`.invite`).
 
 Wording lives in Email Templates created by ``install.py``, one per email and
-language (``Mon Immo - Receipt (fr)``…), so staff edit it in the desk. Who
+language (``Sky Immo - Receipt (fr)``…), so staff edit it in the desk. Who
 receives what is decided here, because ERPNext Notifications cannot reach
 "the app accounts of the Customer who owns this property".
 """
@@ -19,7 +19,7 @@ from frappe.utils import add_days, fmt_money, formatdate, get_url, getdate, toda
 from .access import LANDLORD_ROLE, TENANT_ROLE
 
 REMINDER_DAYS = 5
-APP_ROUTE = "/mon-immo"
+APP_ROUTE = "/sky-immo"
 
 TEMPLATES = {
 	"Due reminder": {
@@ -29,7 +29,7 @@ TEMPLATES = {
 			"<p>Votre loyer pour <b>{{ property }}</b> ({{ period }}) arrive à échéance le "
 			"<b>{{ due_date }}</b>. Montant restant à payer : <b>{{ amount }}</b>.</p>"
 			"<p>Facture n° {{ invoice }}.</p>"
-			'<p><a href="{{ app_url }}">Ouvrir Mon Immo</a></p>',
+			'<p><a href="{{ app_url }}">Ouvrir Sky Immo</a></p>',
 		),
 		"en": (
 			"Reminder: rent of {{ amount }} due by {{ due_date }}",
@@ -37,7 +37,7 @@ TEMPLATES = {
 			"<p>Your rent for <b>{{ property }}</b> ({{ period }}) is due on "
 			"<b>{{ due_date }}</b>. Amount left to pay: <b>{{ amount }}</b>.</p>"
 			"<p>Invoice no. {{ invoice }}.</p>"
-			'<p><a href="{{ app_url }}">Open Mon Immo</a></p>',
+			'<p><a href="{{ app_url }}">Open Sky Immo</a></p>',
 		),
 	},
 	"Receipt": {
@@ -47,7 +47,7 @@ TEMPLATES = {
 			"<p>Nous avons bien reçu votre paiement de <b>{{ amount }}</b> le {{ date }} "
 			"pour {{ property }}.</p>"
 			"<p>Facture(s) réglée(s) : {{ invoices }}. Le reçu est joint à cet e-mail.</p>"
-			'<p><a href="{{ app_url }}">Ouvrir Mon Immo</a></p>',
+			'<p><a href="{{ app_url }}">Ouvrir Sky Immo</a></p>',
 		),
 		"en": (
 			"Payment receipt: {{ amount }}",
@@ -55,7 +55,7 @@ TEMPLATES = {
 			"<p>We have received your payment of <b>{{ amount }}</b> on {{ date }} "
 			"for {{ property }}.</p>"
 			"<p>Invoice(s) paid: {{ invoices }}. The receipt is attached to this email.</p>"
-			'<p><a href="{{ app_url }}">Open Mon Immo</a></p>',
+			'<p><a href="{{ app_url }}">Open Sky Immo</a></p>',
 		),
 	},
 	"Payment notice": {
@@ -64,21 +64,21 @@ TEMPLATES = {
 			"<p>Bonjour {{ name }},</p>"
 			"<p>{{ tenant }} a payé <b>{{ amount }}</b> le {{ date }} pour {{ property }}.</p>"
 			"<p>Facture(s) : {{ invoices }}.</p>"
-			'<p><a href="{{ app_url }}">Ouvrir Mon Immo</a></p>',
+			'<p><a href="{{ app_url }}">Ouvrir Sky Immo</a></p>',
 		),
 		"en": (
 			"Payment received from {{ tenant }}: {{ amount }}",
 			"<p>Hello {{ name }},</p>"
 			"<p>{{ tenant }} paid <b>{{ amount }}</b> on {{ date }} for {{ property }}.</p>"
 			"<p>Invoice(s): {{ invoices }}.</p>"
-			'<p><a href="{{ app_url }}">Open Mon Immo</a></p>',
+			'<p><a href="{{ app_url }}">Open Sky Immo</a></p>',
 		),
 	},
 }
 
 
 def template_name(key: str, lang: str) -> str:
-	return f"Mon Immo - {key} ({lang})"
+	return f"Sky Immo - {key} ({lang})"
 
 
 def ensure_email_templates():
@@ -237,7 +237,7 @@ def send(key: str, recipients: list, context: dict, reference: tuple[str, str], 
 			except frappe.OutgoingEmailError:
 				frappe.clear_last_message()
 				frappe.log_error(
-					f"Mon Immo: no outgoing email account, {key} not sent",
+					f"Sky Immo: no outgoing email account, {key} not sent",
 					reference_doctype=reference[0],
 					reference_name=reference[1],
 				)
@@ -269,7 +269,7 @@ def on_payment_entry_submit(doc, method=None):
 	):
 		return
 	frappe.enqueue(
-		"skyeng_immo.mon_immo.notifications.send_payment_emails",
+		"skyeng_immo.sky_immo.notifications.send_payment_emails",
 		payment_entry=doc.name,
 		enqueue_after_commit=True,
 	)
@@ -379,4 +379,4 @@ def send_due_reminders():
 				"Due reminder", tenant_recipients(invoice.customer), context, ("Sales Invoice", invoice.name)
 			)
 		except Exception:
-			frappe.log_error(f"Mon Immo: due reminder for {invoice.name}")
+			frappe.log_error(f"Sky Immo: due reminder for {invoice.name}")
