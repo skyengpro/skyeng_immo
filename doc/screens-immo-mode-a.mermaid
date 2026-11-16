@@ -11,31 +11,36 @@ flowchart TB
     subgraph DSK["Desk: Sky staff (System Manager / Property Manager)"]
         D1["<b>Landlords</b><br/>- One Customer per landlord<br/>- All under Sky's single company"]
         D2["<b>Properties</b><br/>- Tree: building, then units<br/>- Owner (unit_owner) on every property"]
-        D3["<b>Leases and schedules</b><br/>- Tenant, rent, frequency, deposit<br/>- Invoices generated daily<br/>by PropMS, then submitted"]
+        D3["<b>Leases and schedules</b><br/>- Tenant, units, rent, frequency, deposit<br/>- Invoices generated daily<br/>by PropMS, then submitted"]
         D4["<b>Accounts</b><br/>- Landlord account, tenant accounts<br/>- Invitations sent"]
         D5["<b>Payments received</b><br/>- Recorded against the invoice<br/>(cash, transfer, MoMo outside the app)"]
-        D6["<b>Maintenance requests</b><br/>- Handling and status updates"]
+        D6["<b>Maintenance requests</b><br/>- Every request and its status<br/>- Work organised outside the app"]
     end
 
     MAIL["<b>Emails</b><br/>- Invitation<br/>- Reminder before due date (tenant)<br/>- Receipt (tenant)<br/>- Payment notice (landlord)"]
 
     C0["<b>Sign in</b><br/>- Invitation link, then email and password<br/>- The role picks the home screen"]
 
-    subgraph BAI["App: landlord (read-only)"]
-        B1["<b>1. Home</b><br/>- Number of properties and tenants<br/>- Collected this month, total unpaid<br/>- Overdue invoices"]
+    subgraph BAI["App: landlord"]
+        B1["<b>1. Home</b><br/>- Number of properties and tenants<br/>- Collected this month, total unpaid<br/>- Overdue invoices<br/>- Maintenance: awaiting approval, in progress"]
         B2["<b>2. My properties</b><br/>- Tree by building<br/>- Per unit: status, tenant, rent"]
-        B3["<b>3. Property</b><br/>- Current lease, tenants, move-in date<br/>- Deposit, schedule<br/>- Paid and due invoices, past leases"]
-        B4["<b>4. Tenant</b><br/>- Lease terms<br/>- Payments: dates and amounts<br/>- Invoices due, PDF download"]
-        B5["<b>5. Account</b><br/>- Language"]
+        B3["<b>3. Property</b><br/>- Current lease, tenants, move-in date<br/>- Deposit, schedule<br/>- Paid and due invoices, past leases<br/>- Maintenance on this property"]
+        B4["<b>4. Tenants</b><br/>- Every tenant, current or former<br/>- Unit occupied"]
+        B5["<b>5. Tenant</b><br/>- Lease terms<br/>- Payments: dates and amounts<br/>- Invoices due, PDF download"]
+        B6["<b>6. Maintenance</b><br/>- Requests on their properties, by status<br/>- Detail: unit, tenant, description, photo<br/>- Approve or reject"]
+        B7["<b>7. Account</b><br/>- Language"]
     end
 
     subgraph LOC["App: tenant"]
-        L1["<b>1. Home</b><br/>- Balance due, next due date<br/>- Latest maintenance request"]
-        L2["<b>2. My lease</b><br/>- Unit, dates, rent and frequency<br/>- Deposit<br/>- Schedule with the status of each line"]
-        L3["<b>3. Invoices and receipts</b><br/>- To pay, paid<br/>- Detail, PDF download"]
-        L4["<b>4. Maintenance</b><br/>- New request with photo<br/>- List of requests and status"]
-        L5["<b>5. Account</b><br/>- Language"]
+        L1["<b>1. Home</b><br/>- Number of units occupied<br/>- Balance due, next due date<br/>- Latest maintenance request"]
+        L2["<b>2. My properties</b><br/>- Every unit occupied<br/>- Building, unit, rent, lease end"]
+        L3["<b>3. Property</b><br/>- Unit details<br/>- Lease dates, rent and frequency, deposit<br/>- Schedule with the status of each line"]
+        L4["<b>4. Invoices and receipts</b><br/>- To pay, paid<br/>- Detail, PDF download"]
+        L5["<b>5. Maintenance</b><br/>- New request on a unit, with photo<br/>- List of requests and status<br/>- Mark as completed"]
+        L6["<b>6. Account</b><br/>- Language"]
     end
+
+    ST["<b>Maintenance status</b><br/>Awaiting approval, then In progress or Rejected,<br/>then Completed"]
 
     %% Onboarding
     D1 --> D2 --> D3
@@ -48,32 +53,42 @@ flowchart TB
     %% Landlord path
     B1 -->|My properties| B2
     B2 -->|A property| B3
-    B3 -->|A tenant| B4
-    B1 -->|Overdue invoice| B4
-    B1 -.-> B5
+    B1 -->|Tenants| B4
+    B4 -->|A tenant| B5
+    B3 -->|A tenant| B5
+    B1 -->|Overdue invoice| B5
+    B1 -->|Maintenance| B6
+    B3 -->|A request| B6
+    B1 -.-> B7
 
     %% Tenant path
-    L1 -->|My lease| L2
-    L1 -->|Invoices| L3
-    L1 -->|Maintenance| L4
-    L1 -.-> L5
+    L1 -->|My properties| L2
+    L2 -->|A unit| L3
+    L1 -->|Invoices| L4
+    L1 -->|Maintenance| L5
+    L1 -.-> L6
 
     %% Data that changes
-    D3 ==>|New invoice| L3
+    D3 ==>|New invoice| L4
     D3 ==>|New invoice| B3
-    D5 ==>|Invoice paid, receipt| L3
-    D5 ==>|Payment visible| B4
+    D5 ==>|Invoice paid, receipt| L4
+    D5 ==>|Payment visible| B5
     D5 -.->|Receipt and payment notice| MAIL
     D3 -.->|Reminder before due date| MAIL
-    L4 ==>|Request created| D6
-    D6 -.->|Status updated| L4
+
+    %% Maintenance
+    L5 ==>|Request created: Awaiting approval| B6
+    B6 ==>|Approved: In progress, or Rejected| L5
+    L5 ==>|Work done: Completed| B6
+    B6 -.- ST
+    L5 -.->|Every request| D6
 
     LEG["<b>Reading</b><br/>- Plain arrow: move from one screen to another<br/>- Thick arrow: data changes<br/>- Dotted: email, invitation or feedback<br/>- Each landlord sees only their properties.<br/>Several landlords share the same site."]
 
     class D1,D2,D3,D4,D5,D6 desk
-    class B1,B2,B3,B4,B5 bailleur
-    class L1,L2,L3,L4,L5 locataire
-    class C0,MAIL commun
+    class B1,B2,B3,B4,B5,B6,B7 bailleur
+    class L1,L2,L3,L4,L5,L6 locataire
+    class C0,MAIL,ST commun
     class LEG legende
     style DSK fill:#faf8fd,stroke:#7a5bc0,stroke-width:1px
     style BAI fill:#f7f9fe,stroke:#3b6fd6,stroke-width:1px
