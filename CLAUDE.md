@@ -21,9 +21,18 @@ If a task would contradict a documented decision, stop and say so; never deviate
 - Module `Immobilier`: doctypes `Occupant`, `Visitor Log`, `Vehicle`, `Parking Space`
   (`skyeng_immo/immobilier/doctype/`).
 - `install.py`: roles (`Gardien`, `Property Manager`, `Technicien`) and Asset custom fields,
-  run on `after_install` and `after_migrate`. Must stay idempotent.
-- `fixtures/`: Number Cards, Dashboard Charts, Reports, Workspace, Workspace Sidebar, Desktop Icon
-  of the `Immobilier` dashboard. Order in `hooks.fixtures` matters (cards/charts before workspace).
+  run on `after_install` and `after_migrate`. Must stay idempotent. `before_uninstall` drops the
+  Asset custom fields.
+- `fixtures/`: roles `Landlord` and `Tenant` (`desk_access = 0`, restored on every migrate), then
+  Number Cards, Dashboard Charts, Reports, Workspace, Workspace Sidebar, Desktop Icon of the
+  `Immobilier` dashboard. Order in `hooks.fixtures` matters (cards/charts before workspace).
+- `Sky Immo Settings` (Single, module `Immobilier`): operating mode of the site. System Manager and
+  Property Manager only.
+- Landlord and tenant app: Vue 3 + frappe-ui + Vite in `frontend/`, served at `/sky-immo` by
+  `www/sky_immo.py` through `website_route_rules`. `bench build` builds it into
+  `skyeng_immo/public/frontend/` and `skyeng_immo/www/sky_immo.html` (both gitignored).
+- Translations: `skyeng_immo/locale/fr.po` (Frappe gettext), loaded by the frontend from
+  `skyeng_immo.api.get_translations`.
 - `scripts/validate_doctypes.py`: DocType JSON sanity check (field_order, link targets).
 - `scripts/check_packaging.py`: packaging guard.
 
@@ -63,13 +72,18 @@ pre-commit run --all-files                            # hygiene, ruff, gitleaks 
 python scripts/validate_doctypes.py                   # DocType JSON check
 python scripts/check_packaging.py                     # packaging guard
 gitleaks git --config .gitleaks.toml --redact .       # full-history secret scan
+cd frontend && yarn dev                               # frontend dev server (proxies to bench)
+bench build --app skyeng_immo                         # frontend build + compile translations
+bench generate-pot-file --app skyeng_immo             # refresh locale/main.pot, then update fr.po
 ```
 
 Never run `bench migrate`, `restore`, `reinstall` or `drop-site` against a non-dev site.
 
 ## Conventions
 
-Code, identifiers, comments, commit messages: English. User-facing labels: French.
+Code, identifiers, comments, commit messages: English. New user-facing strings are written in
+English and translated in `skyeng_immo/locale/fr.po`; the older French labels of the `Immobilier`
+doctypes stay as they are.
 PRs target `develop`. Behaviour change => update the matching doc in `doc/` in the same PR.
 
 ## Done means
