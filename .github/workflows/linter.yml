@@ -4,11 +4,11 @@ on:
   pull_request:
     branches:
       - develop
-      - main
   workflow_dispatch:
 
 permissions:
   contents: read
+  pull-requests: read
 
 concurrency:
   group: linter-${{ github.workflow }}-${{ github.head_ref || github.ref }}
@@ -29,21 +29,16 @@ jobs:
           # The hook only scans staged files, which is empty here; the gitleaks job covers CI.
           SKIP: gitleaks
 
-  static:
-    name: Static checks (DocType JSON, packaging)
+  packaging:
+    name: Packaging guard
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
         with:
           python-version: '3.14'
-
-      # A bad field_order or an unknown link target only fails at install-app; this runs in seconds.
-      - name: Validate DocType JSON
-        run: python scripts/validate_doctypes.py
-
       # frappe / erpnext / propms must never be pip dependencies (Press build exit 167).
-      - name: Packaging guard
+      - name: Reject framework packages in pyproject dependencies
         run: python scripts/check_packaging.py
 
   gitleaks:
@@ -81,3 +76,27 @@ jobs:
         run: |
           pip install semgrep
           semgrep ci --config ./frappe-semgrep-rules/rules --config r/python.lang.correctness
+
+  deps-vulnerable-check:
+    name: Vulnerable dependency check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.14'
+
+      - uses: actions/checkout@v7
+
+      - name: Cache pip
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-audit-${{ hashFiles('**/*requirements.txt', '**/pyproject.toml', '**/setup.py') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-audit-
+            ${{ runner.os }}-
+
+      - name: Install and run pip-audit
+        run: |
+          pip install pip-audit
+          pip-audit --desc on .

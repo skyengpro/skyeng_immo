@@ -1,12 +1,22 @@
 # SkyEng Immo
 
-Domain model for property management that PropMS does not provide:
+Landlord and tenant app on top of ERPNext and PropMS (Frappe v16).
 
-| DocType | Purpose |
-|---|---|
-| `Occupant` | Who actually lives in a unit - identity, piece d'identite, dates d'entree/sortie |
-| `Visitor Log` | Registre des visiteurs pour la guerite: entree/sortie, identite, hote, vehicule |
+Staff keep managing landlords, properties, leases, tenants and payments in the desk. This app gives
+landlords and tenants their own interface on the same site:
 
-PropMS models the *lease* (one Customer per unit). It has no notion of the
-people in the unit, so access control and gate registers are impossible on it
-alone. This app adds that layer without modifying PropMS.
+- **Landlord**: their properties and units, tenants, invoices, and approval of maintenance requests.
+- **Tenant**: their units, leases, invoices and receipts, and maintenance requests.
+
+It works in two modes: Sky owns the instance (mode A), or a customer owns it (mode B).
+
+## Documentation
+
+- [`doc/app-usage-flows-immo.md`](doc/app-usage-flows-immo.md): roles, onboarding, invoicing,
+  maintenance and per-role flows.
+- `doc/screens-immo-mode-a.mermaid` / `.pdf` and `doc/screens-immo-mode-b.mermaid` / `.pdf`: the
+  screens to build.
+
+## Requirements
+
+Frappe, ERPNext and PropMS on `version-16`. PropMS is not modified by this app.

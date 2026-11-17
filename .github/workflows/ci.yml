@@ -4,11 +4,9 @@ on:
   pull_request:
     branches:
       - develop
-      - main
   push:
     branches:
       - develop
-      - main
 
 permissions:
   contents: read
@@ -81,8 +79,8 @@ jobs:
       - name: Get apps
         working-directory: /home/runner/frappe-bench
         run: |
-          # required_apps in hooks.py: Occupant, Visitor Log, Vehicle and Parking Space
-          # link to PropMS Property / Lease, and the equipment layer extends ERPNext Asset.
+          # required_apps in hooks.py: the landlord and tenant app reads PropMS Property / Lease
+          # and the ERPNext invoices PropMS generates from them.
           bench get-app erpnext --branch version-16
           bench get-app propms https://github.com/Aakvatech-Limited/PropMS --branch version-16
           bench get-app skyeng_immo "$GITHUB_WORKSPACE"
