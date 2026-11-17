@@ -32,5 +32,6 @@
       "Bash(git push --force*)",
       "Bash(rm -rf *)"
     ]
-  }
+  },
+  "enabledMcpjsonServers": ["context7"]
 }

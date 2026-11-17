@@ -1,11 +1,6 @@
-"""Fail if frappe / erpnext / propms are declared as pip dependencies.
+"""Fail if frappe, erpnext or propms is a pip dependency in pyproject.toml.
 
-uv would then resolve the framework itself, and frappe pins pypika to a git
-URL, which uv rejects for anything that is not a direct requirement: the Press
-image build dies with exit 167 (see skyengpro/propms commit 8c0b1d8).
-
-Only `[project].dependencies` and optional-dependencies are checked.
-`[tool.bench.frappe-dependencies]` is bench metadata, not pip, and is allowed.
+uv would then resolve the framework and the Press build fails with exit 167.
 """
 
 import pathlib

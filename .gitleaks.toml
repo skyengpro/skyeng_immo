@@ -12,15 +12,12 @@ description = "Username and password/token embedded in a URL"
 regex = '''[a-zA-Z][a-zA-Z0-9+.-]*://[^\s/:@"']+:[^\s/:@"']{8,}@[^\s/"']+'''
 tags = ["url", "credentials"]
 
-# Docs and test fixtures may hold credential-shaped strings that are not real secrets.
+# Docs and Markdown are scanned too. Only test fixtures are exempt.
 [allowlist]
-description = "Docs and test fixtures, not production credentials"
+description = "Test fixtures and placeholder domains, not production credentials"
 paths = [
-  '''(?i)^docs?/''',
-  '''(?i)\.md$''',
   '''(?i)/?tests?/fixtures/.*''',
 ]
 regexes = [
-  '''(?i)sandbox''',
   '''(?i)example\.com''',
 ]

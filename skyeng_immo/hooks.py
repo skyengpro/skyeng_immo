@@ -1,7 +1,7 @@
 app_name = "skyeng_immo"
 app_title = "SkyEng Immo"
 app_publisher = "SkyEngPro"
-app_description = "Gestion immobiliere - occupants, visiteurs, vehicules, parking"
+app_description = "Espace bailleur et locataire pour la gestion immobiliere (ERPNext, PropMS)"
 app_email = "contact@skyengpro.com"
 app_license = "MIT"
 
