@@ -101,15 +101,21 @@ def get_leases(filters: dict) -> dict[str, str]:
 	return {row.name: row.property for row in rows}
 
 
-def get_invoices(scope: Scope, fields: list[str] | None = None) -> list[dict]:
+def invoice_filters(scope: Scope) -> dict:
 	"""Submitted invoices of the leases in scope, whoever the payer is."""
+	return {"lease": ["in", list(scope.leases)], "docstatus": 1}
+
+
+def get_invoices(scope: Scope, fields: list[str] | None = None) -> list[dict]:
 	if not scope.leases:
 		return []
-	return frappe.get_all(
-		"Sales Invoice",
-		filters={"lease": ["in", list(scope.leases)], "docstatus": 1},
-		fields=fields or ["name"],
-	)
+	return frappe.get_all("Sales Invoice", filters=invoice_filters(scope), fields=fields or ["name"])
+
+
+def check_invoice(scope: Scope, name: str) -> None:
+	"""Raise PermissionError (HTTP 403) unless the invoice is in scope; a missing one is refused alike."""
+	if not scope.leases or not frappe.db.exists("Sales Invoice", {**invoice_filters(scope), "name": name}):
+		raise frappe.PermissionError
 
 
 def get_issues(scope: Scope, fields: list[str] | None = None) -> list[dict]:
