@@ -8,6 +8,7 @@ it returns; `ignore_permissions` and `frappe.get_all` are used only on data alre
 from dataclasses import dataclass
 
 import frappe
+from frappe.query_builder import Order
 
 MANAGER_ROLES = frozenset({"System Manager", "Property Manager"})
 LANDLORD = "Landlord"
@@ -51,11 +52,11 @@ def get_scope(user: str | None = None) -> Scope:
 
 	leases = set()
 	if owned:
-		leases.update(get_leases({"property": ["in", list(owned)]}))
+		leases.update(find_leases({"property": ["in", list(owned)]}))
 
 	rented = frozenset()
 	if TENANT in roles and customers and not manager:
-		tenant_leases = get_leases({"lease_customer": ["in", list(customers)]})
+		tenant_leases = find_leases({"lease_customer": ["in", list(customers)]})
 		leases.update(tenant_leases)
 		rented = frozenset(tenant_leases.values())
 
@@ -96,7 +97,7 @@ def get_owned_properties(customers: frozenset[str]) -> frozenset[str]:
 	return frozenset(name for name in properties if effective_owner(name) in customers)
 
 
-def get_leases(filters: dict) -> dict[str, str]:
+def find_leases(filters: dict) -> dict[str, str]:
 	"""Lease name -> property, for leases matching `filters`. Draft leases are never shown."""
 	rows = frappe.get_all(
 		"Lease",
@@ -104,6 +105,23 @@ def get_leases(filters: dict) -> dict[str, str]:
 		fields=["name", "property"],
 	)
 	return {row.name: row.property for row in rows}
+
+
+def get_named(doctype: str, names: frozenset[str], fields: list[str] | None, order_by: str) -> list[dict]:
+	"""Rows of `doctype` for names already in scope."""
+	if not names:
+		return []
+	return frappe.get_all(
+		doctype, filters={"name": ["in", list(names)]}, fields=fields or ["name"], order_by=order_by
+	)
+
+
+def get_properties(scope: Scope, fields: list[str] | None = None) -> list[dict]:
+	return get_named("Property", scope.properties, fields, "lft")
+
+
+def get_leases(scope: Scope, fields: list[str] | None = None) -> list[dict]:
+	return get_named("Lease", scope.leases, fields, "start_date desc")
 
 
 def invoice_filters(scope: Scope) -> dict:
@@ -114,7 +132,12 @@ def invoice_filters(scope: Scope) -> dict:
 def get_invoices(scope: Scope, fields: list[str] | None = None) -> list[dict]:
 	if not scope.leases:
 		return []
-	return frappe.get_all("Sales Invoice", filters=invoice_filters(scope), fields=fields or ["name"])
+	return frappe.get_all(
+		"Sales Invoice",
+		filters=invoice_filters(scope),
+		fields=fields or ["name"],
+		order_by="posting_date desc, creation desc",
+	)
 
 
 def check_invoice(scope: Scope, name: str) -> None:
@@ -142,4 +165,5 @@ def get_issues(scope: Scope, fields: list[str] | None = None) -> list[dict]:
 	for condition in conditions[1:]:
 		where |= condition
 	columns = [issue[f] for f in fields or ["name"]]
-	return frappe.qb.from_(issue).select(*columns).where(where).run(as_dict=True)
+	query = frappe.qb.from_(issue).select(*columns).where(where).orderby(issue.creation, order=Order.desc)
+	return query.run(as_dict=True)

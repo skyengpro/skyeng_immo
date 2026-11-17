@@ -20,37 +20,7 @@ class TestScope(IntegrationTestCase):
 
 	def test_each_user_gets_exactly_their_own_data(self):
 		s = self.site
-		expected = {
-			"landlord1": {
-				# 1A inherits landlord 1 from building 1; 1B has its own owner and is not theirs.
-				"properties": {s.building1, s.unit1a},
-				"leases": {s.lease_old, s.lease_1a},
-				"invoices": {s.invoice_1a, s.invoice_old},
-				"issues": {s.issue_1a, s.issue_1a_old},
-			},
-			"landlord2": {
-				# 2A inherits landlord 2 through floor 2; 1B is theirs inside landlord 1's building.
-				"properties": {s.unit1b, s.building2, s.floor2, s.unit2a},
-				"leases": {s.lease_2a},
-				"invoices": {s.invoice_2a},
-				"issues": {s.issue_2a, s.issue_1b},
-			},
-			"tenant1": {
-				# The draft lease on 1B is hidden; 1A's invoice is theirs although a third party pays it.
-				"properties": {s.unit1a},
-				"leases": {s.lease_1a},
-				"invoices": {s.invoice_1a},
-				# The request tenant 2 raised on 1A before moving out is not theirs.
-				"issues": {s.issue_1a},
-			},
-			"tenant2": {
-				"properties": {s.unit1a, s.unit2a},
-				"leases": {s.lease_old, s.lease_2a},
-				"invoices": {s.invoice_old, s.invoice_2a},
-				"issues": {s.issue_1a_old, s.issue_2a},
-			},
-		}
-		for user, data in expected.items():
+		for user, data in s.expected().items():
 			scope = get_scope(s.users[user])
 			actual = {
 				"properties": set(scope.properties),
