@@ -18,6 +18,8 @@ concurrency:
 jobs:
   tests:
     runs-on: org-ci-nano
+    container:
+      image: ghcr.io/skyengpro/runner-provisioner/org-ci-runner@sha256:c33d5d2d6fe44e3d2017e73fd6c4dccff3d45ec1f3389268744e7feb7b7f7a7c
     name: Server (Frappe version-16, ERPNext, PropMS)
 
     services:
