@@ -1,4 +1,3 @@
-
 # Property app usage flows
 
 This document describes how each role uses the app in the two operating modes defined in EP-01. The screens to build are shown separately, in `screens-immo-mode-a.mermaid` and `screens-immo-mode-b.mermaid`.
@@ -104,7 +103,7 @@ sequenceDiagram
 
 In mode B, a landlord exists only for properties managed for a third party. For the customer's own properties, the payment notice goes to the property manager.
 
-## 3. Maintenance request (both modes)
+## 3. Maintenance request: Issue in ERPNext (both modes)
 
 A request goes through four statuses. The tenant opens it, the landlord decides, and the tenant closes it once the work is done.
 
