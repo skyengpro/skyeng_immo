@@ -18,6 +18,9 @@ after_install = "skyeng_immo.install.after_install"
 after_migrate = "skyeng_immo.install.after_migrate"
 before_uninstall = "skyeng_immo.install.before_uninstall"
 
+# "Invite to Sky-immo" button on the Customer form; ERPNext stays unchanged.
+doctype_js = {"Customer": "public/js/customer.js"}
+
 # Serves the built frontend at /sky-immo; every sub-route returns the same page.
 website_route_rules = [
 	{"from_route": "/sky-immo/<path:app_path>", "to_route": "sky_immo"},

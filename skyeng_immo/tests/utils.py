@@ -6,6 +6,7 @@ from frappe.utils import add_months, nowdate
 from propms.tests.utils import create_customer, create_item
 
 from skyeng_immo.immobilier.doctype.sky_immo_settings.test_sky_immo_settings import make_user
+from skyeng_immo.invitation import link_portal_user
 
 # Bootstrapped by erpnext.tests.utils, imported through test_sales_invoice above.
 COMPANY = "_Test Company"
@@ -85,19 +86,6 @@ def make_issue(property_name: str, customer: str, raised_by: str) -> str:
 	# PropMS makes staff fields (person_in_charge, issue_type) mandatory; scope does not read them.
 	doc.flags.ignore_mandatory = True
 	return doc.insert(ignore_permissions=True).name
-
-
-def link_portal_user(customer: str, user: str) -> None:
-	"""Same row the invitation adds; inserted directly so ERPNext does not add the Customer role."""
-	frappe.get_doc(
-		{
-			"doctype": "Portal User",
-			"parenttype": "Customer",
-			"parentfield": "portal_users",
-			"parent": customer,
-			"user": user,
-		}
-	).insert(ignore_permissions=True)
 
 
 class SharedSite:
