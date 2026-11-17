@@ -3,7 +3,7 @@
 import frappe
 from erpnext.accounts.doctype.sales_invoice.test_sales_invoice import create_sales_invoice
 from frappe.utils import add_months, nowdate
-from propms.tests.utils import create_customer, create_item
+from propms.tests.utils import create_customer, create_item, create_property
 
 from skyeng_immo.immobilier.doctype.sky_immo_settings.test_sky_immo_settings import make_user
 from skyeng_immo.invitation import link_portal_user
@@ -14,20 +14,7 @@ CURRENCY = "INR"
 
 
 def make_property(name: str, owner: str | None = None, parent: str | None = None, is_group: int = 0) -> str:
-	if not frappe.db.exists("Property", name):
-		frappe.get_doc(
-			{
-				"doctype": "Property",
-				"name1": name,
-				"company": COMPANY,
-				"cost_center": frappe.db.get_value("Cost Center", {"company": COMPANY, "is_group": 0}),
-				"status": "Available",
-				"unit_owner": owner,
-				"parent_property": parent,
-				"is_group": is_group,
-			}
-		).insert(ignore_permissions=True)
-	return name
+	return create_property(name, company=COMPANY, unit_owner=owner, parent_property=parent, is_group=is_group)
 
 
 def make_lease(

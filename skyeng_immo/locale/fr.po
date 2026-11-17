@@ -160,6 +160,10 @@ msgid "Customer {0} has no email address. Add one to their primary contact."
 msgstr "Le client {0} n'a pas d'adresse e-mail. Ajoutez-en une à son contact principal."
 
 #: skyeng_immo/invitation.py
+msgid "Customer {0} is disabled."
+msgstr "Le client {0} est désactivé."
+
+#: skyeng_immo/invitation.py
 msgid "Customer {0} owns no property and has no active lease."
 msgstr "Le client {0} ne possède aucun bien et n'a aucun bail actif."
 

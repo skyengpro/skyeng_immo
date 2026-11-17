@@ -141,26 +141,12 @@ class TestAppsScreen(SignInTestCase):
 			"other staff": make_user("_test_immo_tile_sales@example.com", ["Sales User"]),
 			"Guest": "Guest",
 		}
-		expected = {
-			MODE_SKY: {
-				"landlord": True,
-				"tenant": True,
-				"manager": False,
-				"other staff": False,
-				"Guest": False,
-			},
-			MODE_CUSTOMER: {
-				"landlord": True,
-				"tenant": True,
-				"manager": True,
-				"other staff": False,
-				"Guest": False,
-			},
-		}
-		for mode, per_user in expected.items():
+		for mode in (MODE_SKY, MODE_CUSTOMER):
 			self.set_mode(mode)
-			for label, want in per_user.items():
-				with self.subTest(mode=mode, user=label), self.set_user(users[label]):
+			for label, user in users.items():
+				# Only a manager's tile depends on the mode.
+				want = label in ("landlord", "tenant") or (label == "manager" and mode == MODE_CUSTOMER)
+				with self.subTest(mode=mode, user=label), self.set_user(user):
 					self.assertIs(has_app_permission(), want)
 
 

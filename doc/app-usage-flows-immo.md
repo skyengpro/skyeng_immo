@@ -18,6 +18,8 @@ In both modes, one app serves every role. The role of the signed-in person decid
 - the landlord sees the properties they own (`unit_owner`), with their units;
 - the tenant sees the units on their leases. A tenant can occupy more than one unit.
 
+After sign-in, a landlord or a tenant opens the app. The property manager opens the app in mode B and the desk in mode A. In mode A, `/sky-immo` sends the property manager to the desk.
+
 Management happens in the desk: landlords, properties, leases, tenants, accounts and payments. The app has two actions, both about maintenance: the tenant creates a request and marks it completed, and the landlord approves or rejects it.
 
 ## 1. Onboarding
@@ -37,7 +39,7 @@ sequenceDiagram
     S->>D: Creates the landlord (Customer)
     S->>D: Creates their properties in the tree (building, then units), with the landlord as owner
     S->>D: Creates each lease, with its tenant, units, rent and schedule
-    S->>D: Creates the landlord's account and the tenants' accounts
+    S->>D: Invites the landlord and each tenant from their Customer (section 1.3)
     D-->>B: Invitation email
     D-->>L: Invitation email
     B->>D: Opens the link and sets a password
@@ -64,17 +66,27 @@ sequenceDiagram
     G->>D: Creates its properties in the tree, with the customer's company as owner
     opt Properties managed for a third-party owner
         G->>D: Creates the third-party landlord (Customer) and links their properties
-        G->>D: Creates the third-party landlord's account
+        G->>D: Invites the third-party landlord (section 1.3)
         D-->>B: Invitation email
     end
     G->>D: Creates each lease, with its tenant, units, rent and schedule
-    G->>D: Creates the tenants' accounts
+    G->>D: Invites each tenant (section 1.3)
     D-->>L: Invitation email
     L->>D: Opens the link and sets a password
     D-->>L: The app opens on their units
 ```
 
 The owner is always set on every property, even when it is the customer's own company. Visibility rules therefore stay the same in both modes.
+
+### 1.3 Invitation
+
+Staff invite a person from the desk: they open the Customer and click **Invite to Sky-immo**.
+
+- **Who can invite:** System Manager and Property Manager. A Property Manager also needs a role that can read Customer, such as Sales User, because PropMS gives them no access to it.
+- **What the Customer needs:** an email address on the primary contact, and at least one property owned (a unit without an owner takes the owner of its nearest parent) or one active lease. The site also needs an outgoing email account.
+- **What happens:** the user is created, or reused if the email already has one, and added to the Customer's Portal Users. They get Landlord if the Customer owns a property and Tenant if the Customer has an active lease. They receive an email with a link to choose a password, and the app opens after sign-in.
+- **What does not happen:** the ERPNext Customer role is not given, so the ERPNext portal stays closed to them. A disabled user is refused until staff enable them. A staff member keeps their desk access and their default app.
+- **Inviting again:** sends a new link and changes nothing else.
 
 ## 2. Invoicing and payment (both modes)
 
@@ -235,3 +247,4 @@ sequenceDiagram
 | Property manager in the app | No                                      | Yes, over every property, grouped by landlord                                       |
 | Who approves maintenance    | The landlord                            | The third-party landlord, or the property manager for the customer's own properties |
 | Landlord and tenant screens | Identical                               | Identical                                                                           |
+| Landing page of the property manager | The desk                       | The app                                                                             |

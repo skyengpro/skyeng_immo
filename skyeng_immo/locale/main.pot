@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: SkyEng Immo VERSION\n"
 "Report-Msgid-Bugs-To: contact@skyengpro.com\n"
-"POT-Creation-Date: 2026-11-17 11:51+0000\n"
-"PO-Revision-Date: 2026-11-17 11:51+0000\n"
+"POT-Creation-Date: 2026-11-17 13:29+0000\n"
+"PO-Revision-Date: 2026-11-17 13:29+0000\n"
 "Last-Translator: contact@skyengpro.com\n"
 "Language-Team: contact@skyengpro.com\n"
 "MIME-Version: 1.0\n"
@@ -153,11 +153,15 @@ msgstr ""
 msgid "Couverte"
 msgstr ""
 
-#: skyeng_immo/invitation.py:25
+#: skyeng_immo/invitation.py:26
 msgid "Customer {0} has no email address. Add one to their primary contact."
 msgstr ""
 
-#: skyeng_immo/invitation.py:29
+#: skyeng_immo/invitation.py:22
+msgid "Customer {0} is disabled."
+msgstr ""
+
+#: skyeng_immo/invitation.py:30
 msgid "Customer {0} owns no property and has no active lease."
 msgstr ""
 
@@ -356,7 +360,7 @@ msgstr ""
 msgid "Niveau"
 msgstr ""
 
-#: skyeng_immo/invitation.py:42
+#: skyeng_immo/invitation.py:40
 msgid "No outgoing email account is set up, so the invitation cannot be sent."
 msgstr ""
 
@@ -646,7 +650,7 @@ msgstr ""
 msgid "Unite visitee"
 msgstr ""
 
-#: skyeng_immo/invitation.py:61
+#: skyeng_immo/invitation.py:69
 msgid "User {0} is disabled. Enable them before sending an invitation."
 msgstr ""
 

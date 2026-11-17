@@ -66,6 +66,10 @@ rules are the same in both modes.
 - `fixtures/`: roles `Landlord` and `Tenant` (`desk_access = 0`, restored on every migrate), then
   Number Cards, Dashboard Charts, Reports, Workspace, Workspace Sidebar, Desktop Icon of the
   `Immobilier` dashboard. Order in `hooks.fixtures` matters (cards/charts before workspace).
+- Access: `access.py` holds `get_scope(user)`, the one computation of what a user may see (owner
+  inherited along `parent_property`, leases, invoices, maintenance requests). Every endpoint in
+  `api.py` starts from it. `invitation.py` backs the "Invite to Sky-immo" button
+  (`public/js/customer.js`). `navigation.py` holds the apps tile, the landing page and the default app.
 - `Sky Immo Settings` (Single, module `Immobilier`): operating mode of the site. System Manager and
   Property Manager only.
 - Landlord and tenant app: Vue 3 + frappe-ui + Vite in `frontend/`, served at `/sky-immo` by
@@ -112,7 +116,7 @@ rules are the same in both modes.
 ## Commands
 
 ```bash
-bench --site <dev-site> run-tests --app skyeng_immo   # site tests
+bench --site <test-site> run-tests --app skyeng_immo  # needs a fresh site (erpnext, propms, this app)
 pre-commit run --all-files                            # hygiene, ruff, gitleaks (staged)
 python scripts/check_packaging.py                     # packaging guard
 gitleaks git --config .gitleaks.toml --redact .       # full-history secret scan

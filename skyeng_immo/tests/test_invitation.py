@@ -1,5 +1,4 @@
 from itertools import count
-from unittest.mock import patch
 
 import frappe
 from frappe.tests import IntegrationTestCase
@@ -19,7 +18,7 @@ def make_invitee(owns: bool = False, rents: bool = False, email: str | None = ""
 	n = next(_serial)
 	customer = create_customer(f"_Test Immo Invitee {n}")
 	email = f"_test_immo_invitee_{n}@example.com" if email == "" else email
-	# Customer.email_id is read from the primary contact; the stored value is what the app reads.
+	# No primary contact here, so the app falls back to this stored copy of the email.
 	frappe.db.set_value("Customer", customer, "email_id", email)
 	if owns:
 		make_property(f"_Test Immo Invite Owned {n}", owner=customer)
@@ -30,6 +29,19 @@ def make_invitee(owns: bool = False, rents: bool = False, email: str | None = ""
 		lease = make_lease(unit, customer)
 		assert frappe.db.get_value("Lease", lease, "lease_status") == "Active"
 	return customer, email
+
+
+def make_contact(customer: str, email: str) -> None:
+	"""A primary contact with `email`, which the Customer's stored copy does not know about."""
+	contact = frappe.get_doc(
+		{
+			"doctype": "Contact",
+			"first_name": "_Test",
+			"email_ids": [{"email_id": email, "is_primary": 1}],
+			"links": [{"link_doctype": "Customer", "link_name": customer}],
+		}
+	).insert(ignore_permissions=True)
+	frappe.db.set_value("Customer", customer, "customer_primary_contact", contact.name)
 
 
 def make_outgoing_account() -> None:
@@ -141,14 +153,42 @@ class TestInvitation(IntegrationTestCase):
 		self.assertFalse(sent_to(email))
 
 	def test_missing_outgoing_email_account_is_reported(self):
-		customer, email = make_invitee(owns=True)
-		with patch(
-			"frappe.core.doctype.user.user.User.send_welcome_mail_to_user",
-			side_effect=frappe.OutgoingEmailError,
-		):
-			with self.assertRaises(frappe.ValidationError) as raised:
-				self.invite(customer)
+		customer, _ = make_invitee(owns=True)
+		frappe.db.set_value("Email Account", "_Test Immo Outgoing", "default_outgoing", 0)
+		self.addCleanup(frappe.db.set_value, "Email Account", "_Test Immo Outgoing", "default_outgoing", 1)
+		# Frappe keeps the outgoing account it found for the rest of the request.
+		self.addCleanup(setattr, frappe.local, "outgoing_email_account", {})
+		frappe.local.outgoing_email_account = {}
+
+		with self.assertRaises(frappe.ValidationError) as raised:
+			self.invite(customer)
 		self.assertIn("No outgoing email account", str(raised.exception))
+
+	def test_email_comes_from_the_primary_contact_not_the_stale_copy(self):
+		customer, stale = make_invitee(owns=True)
+		live = stale.replace("invitee", "live")
+		make_contact(customer, live)
+
+		self.assertEqual(self.invite(customer)["user"], live)
+		self.assertFalse(frappe.db.exists("User", stale))
+
+	def test_disabled_customer_is_refused(self):
+		customer, email = make_invitee(owns=True)
+		frappe.db.set_value("Customer", customer, "disabled", 1)
+
+		with self.assertRaises(frappe.ValidationError):
+			self.invite(customer)
+		self.assertFalse(frappe.db.exists("User", email))
+
+	def test_a_customer_form_opened_before_the_invitation_cannot_remove_the_link(self):
+		customer, email = make_invitee(owns=True)
+		stale_form = frappe.get_doc("Customer", customer)
+
+		self.invite(customer)
+
+		with self.assertRaises(frappe.TimestampMismatchError):
+			stale_form.save(ignore_permissions=True)
+		self.assertEqual(frappe.get_all("Portal User", {"parent": customer}, pluck="user"), [email])
 
 	def test_only_staff_who_can_read_the_customer_may_invite(self):
 		customer, email = make_invitee(owns=True)

@@ -1,5 +1,6 @@
 import frappe
 from frappe.translate import get_all_translations
+from frappe.utils.print_format import download_pdf
 
 from skyeng_immo import access
 
@@ -44,14 +45,11 @@ def download_invoice_pdf(name: str) -> None:
 	Landlords and tenants have no print permission on Sales Invoice, so the print check
 	is lifted for this one render, after the scope check.
 	"""
-	access.check_invoice(access.get_scope(), name)
+	name = access.check_invoice(access.get_scope(), name)
 
+	previous = frappe.flags.ignore_print_permissions
 	frappe.flags.ignore_print_permissions = True
 	try:
-		pdf = frappe.get_print("Sales Invoice", name, as_pdf=True)
+		download_pdf("Sales Invoice", name)
 	finally:
-		frappe.flags.ignore_print_permissions = False
-
-	frappe.local.response.filename = f"{name.replace(' ', '-').replace('/', '-')}.pdf"
-	frappe.local.response.filecontent = pdf
-	frappe.local.response.type = "pdf"
+		frappe.flags.ignore_print_permissions = previous

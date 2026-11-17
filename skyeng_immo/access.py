@@ -1,14 +1,14 @@
-"""What each Sky-immo user may see: the one place that computes it.
+"""What each Sky-immo user may see, computed by `get_scope` and nowhere else.
 
-Landlord and Tenant hold no DocPerm on PropMS or ERPNext doctypes, so the app never relies on
-Frappe's permission engine for them. Every endpoint calls `get_scope` first and serves only what
-it returns; `ignore_permissions` and `frappe.get_all` are used only on data already scoped here.
+Landlord and Tenant hold no DocPerm on PropMS or ERPNext doctypes, so Frappe's permission engine
+never decides for them. Every endpoint calls `get_scope` first, and `frappe.get_all` runs only
+on names it returned.
 """
 
 from dataclasses import dataclass
 
 import frappe
-from frappe.query_builder import Order
+from frappe.query_builder import Criterion, Order
 
 MANAGER_ROLES = frozenset({"System Manager", "Property Manager"})
 LANDLORD = "Landlord"
@@ -18,8 +18,7 @@ TENANT = "Tenant"
 @dataclass(frozen=True)
 class Scope:
 	user: str
-	is_manager: bool
-	# Customers the user is a portal user of.
+	# Enabled Customers the user is a portal user of.
 	customers: frozenset[str]
 	# Properties whose effective owner is one of `customers`, or every property for a manager.
 	owned_properties: frozenset[str]
@@ -39,46 +38,48 @@ def is_manager(user: str | None = None) -> bool:
 
 def get_scope(user: str | None = None) -> Scope:
 	user = user or frappe.session.user
-	roles = set(frappe.get_roles(user))
+	roles = frappe.get_roles(user)
 	manager = is_manager(user)
 	customers = frozenset() if manager else get_customers(user)
 
 	if manager:
 		owned = frozenset(frappe.get_all("Property", pluck="name"))
-	elif LANDLORD in roles and customers:
+	elif LANDLORD in roles:
 		owned = get_owned_properties(customers)
 	else:
 		owned = frozenset()
 
-	leases = set()
-	if owned:
-		leases.update(find_leases({"property": ["in", list(owned)]}))
-
-	rented = frozenset()
-	if TENANT in roles and customers and not manager:
+	owned_leases = find_leases({"property": ["in", list(owned)]}) if owned else {}
+	tenant_leases = {}
+	if TENANT in roles and customers:
 		tenant_leases = find_leases({"lease_customer": ["in", list(customers)]})
-		leases.update(tenant_leases)
-		rented = frozenset(tenant_leases.values())
 
 	return Scope(
 		user=user,
-		is_manager=manager,
 		customers=customers,
 		owned_properties=owned,
-		rented_properties=rented,
-		leases=frozenset(leases),
+		rented_properties=frozenset(tenant_leases.values()),
+		leases=frozenset(owned_leases | tenant_leases),
 	)
 
 
 def get_customers(user: str) -> frozenset[str]:
-	"""Customers that list the user in their Portal Users table."""
-	return frozenset(
-		frappe.get_all(
-			"Portal User",
-			filters={"parenttype": "Customer", "parentfield": "portal_users", "user": user},
-			pluck="parent",
+	"""Enabled Customers that list the user in their Portal Users table."""
+	portal_user = frappe.qb.DocType("Portal User")
+	customer = frappe.qb.DocType("Customer")
+	query = (
+		frappe.qb.from_(portal_user)
+		.join(customer)
+		.on(customer.name == portal_user.parent)
+		.select(portal_user.parent)
+		.where(
+			(portal_user.parenttype == "Customer")
+			& (portal_user.parentfield == "portal_users")
+			& (portal_user.user == user)
+			& (customer.disabled == 0)
 		)
 	)
+	return frozenset(query.run(pluck=True))
 
 
 def get_owned_properties(customers: frozenset[str]) -> frozenset[str]:
@@ -88,7 +89,10 @@ def get_owned_properties(customers: frozenset[str]) -> frozenset[str]:
 	}
 
 	def effective_owner(name: str | None) -> str | None:
-		while name and name in properties:
+		# A parent_property cycle, possible only through direct database writes, ends the walk.
+		seen = set()
+		while name in properties and name not in seen:
+			seen.add(name)
 			if properties[name].unit_owner:
 				return properties[name].unit_owner
 			name = properties[name].parent_property
@@ -107,20 +111,18 @@ def find_leases(filters: dict) -> dict[str, str]:
 	return {row.name: row.property for row in rows}
 
 
-def get_named(doctype: str, names: frozenset[str], fields: list[str] | None, order_by: str) -> list[dict]:
+def get_named(doctype: str, names: frozenset[str], fields: list[str], order_by: str) -> list[dict]:
 	"""Rows of `doctype` for names already in scope."""
 	if not names:
 		return []
-	return frappe.get_all(
-		doctype, filters={"name": ["in", list(names)]}, fields=fields or ["name"], order_by=order_by
-	)
+	return frappe.get_all(doctype, filters={"name": ["in", list(names)]}, fields=fields, order_by=order_by)
 
 
-def get_properties(scope: Scope, fields: list[str] | None = None) -> list[dict]:
+def get_properties(scope: Scope, fields: list[str]) -> list[dict]:
 	return get_named("Property", scope.properties, fields, "lft")
 
 
-def get_leases(scope: Scope, fields: list[str] | None = None) -> list[dict]:
+def get_leases(scope: Scope, fields: list[str]) -> list[dict]:
 	return get_named("Lease", scope.leases, fields, "start_date desc")
 
 
@@ -129,24 +131,29 @@ def invoice_filters(scope: Scope) -> dict:
 	return {"lease": ["in", list(scope.leases)], "docstatus": 1}
 
 
-def get_invoices(scope: Scope, fields: list[str] | None = None) -> list[dict]:
+def get_invoices(scope: Scope, fields: list[str]) -> list[dict]:
 	if not scope.leases:
 		return []
 	return frappe.get_all(
 		"Sales Invoice",
 		filters=invoice_filters(scope),
-		fields=fields or ["name"],
+		fields=fields,
 		order_by="posting_date desc, creation desc",
 	)
 
 
-def check_invoice(scope: Scope, name: str) -> None:
-	"""Raise PermissionError (HTTP 403) unless the invoice is in scope; a missing one is refused alike."""
-	if not scope.leases or not frappe.db.exists("Sales Invoice", {**invoice_filters(scope), "name": name}):
+def check_invoice(scope: Scope, name: str) -> str:
+	"""Return the invoice's own name if it is in scope, else raise PermissionError (HTTP 403).
+
+	A missing invoice is refused the same way, so the answer does not tell whether it exists.
+	"""
+	found = scope.leases and frappe.db.exists("Sales Invoice", {**invoice_filters(scope), "name": name})
+	if not found:
 		raise frappe.PermissionError
+	return found
 
 
-def get_issues(scope: Scope, fields: list[str] | None = None) -> list[dict]:
+def get_issues(scope: Scope, fields: list[str]) -> list[dict]:
 	"""Maintenance requests: all of an owned property's, and a tenant's own on their rented units."""
 	issue = frappe.qb.DocType("Issue")
 	conditions = []
@@ -161,9 +168,10 @@ def get_issues(scope: Scope, fields: list[str] | None = None) -> list[dict]:
 	if not conditions:
 		return []
 
-	where = conditions[0]
-	for condition in conditions[1:]:
-		where |= condition
-	columns = [issue[f] for f in fields or ["name"]]
-	query = frappe.qb.from_(issue).select(*columns).where(where).orderby(issue.creation, order=Order.desc)
+	query = (
+		frappe.qb.from_(issue)
+		.select(*[issue[f] for f in fields])
+		.where(Criterion.any(conditions))
+		.orderby(issue.creation, order=Order.desc)
+	)
 	return query.run(as_dict=True)

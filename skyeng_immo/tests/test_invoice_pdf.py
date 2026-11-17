@@ -42,6 +42,11 @@ class TestInvoicePdf(IntegrationTestCase):
 				self.assertTrue(frappe.local.response.filecontent.startswith(b"%PDF"))
 				self.assertIn(s.invoice_1a.encode(), frappe.local.response.filecontent)
 
+	def test_invoice_is_served_under_its_own_name_whatever_the_requested_case(self):
+		invoice = self.site.invoice_1a
+		self.download("tenant1", invoice.lower())
+		self.assertEqual(frappe.local.response.filename, f"{invoice}.pdf")
+
 	def test_invoice_out_of_scope_is_refused_with_403(self):
 		s = self.site
 		refused = {

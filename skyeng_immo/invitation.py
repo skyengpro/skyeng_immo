@@ -7,19 +7,21 @@ usually cannot write either.
 
 import frappe
 from frappe import _
+from frappe.utils import now_datetime
 
-from skyeng_immo.access import LANDLORD, TENANT, get_owned_properties
-
-INVITER_ROLES = ("System Manager", "Property Manager")
+from skyeng_immo.access import LANDLORD, MANAGER_ROLES, TENANT
 
 
 @frappe.whitelist(methods=["POST"])
 def invite_customer(customer: str) -> dict:
 	"""Create or reuse the user of `customer`, link them and email a link to set a password."""
-	frappe.only_for(INVITER_ROLES)
+	frappe.only_for(MANAGER_ROLES)
 	frappe.has_permission("Customer", "read", doc=customer, throw=True)
 
-	name, email = frappe.db.get_value("Customer", customer, ["customer_name", "email_id"])
+	if frappe.db.get_value("Customer", customer, "disabled"):
+		frappe.throw(_("Customer {0} is disabled.").format(customer))
+
+	email = get_customer_email(customer)
 	if not email:
 		frappe.throw(
 			_("Customer {0} has no email address. Add one to their primary contact.").format(customer)
@@ -29,7 +31,7 @@ def invite_customer(customer: str) -> dict:
 	if not roles:
 		frappe.throw(_("Customer {0} owns no property and has no active lease.").format(customer))
 
-	user, created = get_or_create_user(email.strip().lower(), name)
+	user, created = get_or_create_user(email, frappe.db.get_value("Customer", customer, "customer_name"))
 	user.append_roles(*roles)
 	user.save(ignore_permissions=True)
 	link_portal_user(customer, user.name)
@@ -42,10 +44,20 @@ def invite_customer(customer: str) -> dict:
 	return {"user": user.name, "roles": roles, "created": created}
 
 
+def get_customer_email(customer: str) -> str:
+	"""Email of the primary contact. Customer.email_id only copies it when the Customer is saved."""
+	contact, stored = frappe.db.get_value("Customer", customer, ["customer_primary_contact", "email_id"])
+	live = frappe.db.get_value("Contact", contact, "email_id") if contact else None
+	return (live or stored or "").strip().lower()
+
+
 def get_app_roles(customer: str) -> list[str]:
-	"""Landlord if the customer owns a property, Tenant if they have an active lease."""
+	"""Landlord if the customer owns a property, Tenant if they have an active lease.
+
+	Owning a unit through its parent means the parent names the customer, so no tree walk is needed.
+	"""
 	roles = []
-	if get_owned_properties(frozenset({customer})):
+	if frappe.db.exists("Property", {"unit_owner": customer}):
 		roles.append(LANDLORD)
 	if frappe.db.exists("Lease", {"lease_customer": customer, "lease_status": "Active"}):
 		roles.append(TENANT)
@@ -79,3 +91,7 @@ def link_portal_user(customer: str, user: str) -> None:
 	frappe.get_doc({"doctype": "Portal User", **filters, "user": user, "idx": idx}).insert(
 		ignore_permissions=True
 	)
+	# Saving a Customer form opened before this row existed would delete it. A new `modified`
+	# makes that save fail with a "reload the document" error instead.
+	frappe.db.set_value("Customer", customer, "modified", now_datetime(), update_modified=False)
+	frappe.clear_document_cache("Customer", customer)
