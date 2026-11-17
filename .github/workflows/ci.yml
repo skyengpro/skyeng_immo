@@ -51,7 +51,10 @@ jobs:
       - name: Start MariaDB and Redis
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends mariadb-server mariadb-client redis-server
+          # pkg-config is required by bench; libmariadb-dev and the compiler toolchain build mysqlclient.
+          sudo apt-get install -y --no-install-recommends \
+            mariadb-server mariadb-client redis-server \
+            pkg-config libmariadb-dev build-essential libffi-dev libssl-dev
 
           sudo redis-server --port 13000 --daemonize yes
           sudo redis-server --port 11000 --daemonize yes
