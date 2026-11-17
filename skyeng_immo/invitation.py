@@ -11,7 +11,6 @@ from frappe import _
 from skyeng_immo.access import LANDLORD, TENANT, get_owned_properties
 
 INVITER_ROLES = ("System Manager", "Property Manager")
-APP_NAME = "skyeng_immo"
 
 
 @frappe.whitelist(methods=["POST"])
@@ -32,9 +31,6 @@ def invite_customer(customer: str) -> dict:
 
 	user, created = get_or_create_user(email.strip().lower(), name)
 	user.append_roles(*roles)
-	# Website Users only use the app; a staff member keeps their own default app.
-	if user.user_type == "Website User" and not user.default_app:
-		user.default_app = APP_NAME
 	user.save(ignore_permissions=True)
 	link_portal_user(customer, user.name)
 

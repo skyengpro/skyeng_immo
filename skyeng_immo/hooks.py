@@ -18,6 +18,23 @@ after_install = "skyeng_immo.install.after_install"
 after_migrate = "skyeng_immo.install.after_migrate"
 before_uninstall = "skyeng_immo.install.before_uninstall"
 
+# Tile on the apps screen. It is also how a user's default app resolves to /sky-immo.
+add_to_apps_screen = [
+	{
+		"name": app_name,
+		"title": "Sky-immo",
+		"logo": "/assets/skyeng_immo/frontend/icons/icon-192.png",
+		"route": "/sky-immo",
+		"has_permission": "skyeng_immo.navigation.has_app_permission",
+	}
+]
+
+# Landing page after sign-in: managers of a customer-owned site go to the app.
+get_website_user_home_page = "skyeng_immo.navigation.get_home_page"
+
+# Landlords and tenants land on the app whoever gave them the role.
+doc_events = {"User": {"validate": "skyeng_immo.navigation.set_default_app"}}
+
 # "Invite to Sky-immo" button on the Customer form; ERPNext stays unchanged.
 doctype_js = {"Customer": "public/js/customer.js"}
 

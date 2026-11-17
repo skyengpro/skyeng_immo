@@ -31,13 +31,18 @@ class Scope:
 		return self.owned_properties | self.rented_properties
 
 
+def is_manager(user: str | None = None) -> bool:
+	"""Property Manager or System Manager, who work in Desk and may see every property."""
+	return not MANAGER_ROLES.isdisjoint(frappe.get_roles(user))
+
+
 def get_scope(user: str | None = None) -> Scope:
 	user = user or frappe.session.user
 	roles = set(frappe.get_roles(user))
-	is_manager = bool(roles & MANAGER_ROLES)
-	customers = frozenset() if is_manager else get_customers(user)
+	manager = is_manager(user)
+	customers = frozenset() if manager else get_customers(user)
 
-	if is_manager:
+	if manager:
 		owned = frozenset(frappe.get_all("Property", pluck="name"))
 	elif LANDLORD in roles and customers:
 		owned = get_owned_properties(customers)
@@ -49,14 +54,14 @@ def get_scope(user: str | None = None) -> Scope:
 		leases.update(get_leases({"property": ["in", list(owned)]}))
 
 	rented = frozenset()
-	if TENANT in roles and customers and not is_manager:
+	if TENANT in roles and customers and not manager:
 		tenant_leases = get_leases({"lease_customer": ["in", list(customers)]})
 		leases.update(tenant_leases)
 		rented = frozenset(tenant_leases.values())
 
 	return Scope(
 		user=user,
-		is_manager=is_manager,
+		is_manager=manager,
 		customers=customers,
 		owned_properties=owned,
 		rented_properties=rented,
