@@ -16,6 +16,13 @@ required_apps = ["erpnext", "propms"]
 # not four DocTypes whose permissions point at roles that do not exist.
 after_install = "skyeng_immo.install.after_install"
 after_migrate = "skyeng_immo.install.after_migrate"
+before_uninstall = "skyeng_immo.install.before_uninstall"
+
+# Serves the built frontend at /sky-immo; every sub-route returns the same page.
+website_route_rules = [
+	{"from_route": "/sky-immo/<path:app_path>", "to_route": "sky_immo"},
+	{"from_route": "/sky-immo", "to_route": "sky_immo"},
+]
 
 # Fixtures ship the dashboard so a fresh install brings the whole thing, not
 # just empty DocTypes. Order matters: cards, charts and reports must exist
@@ -25,6 +32,8 @@ after_migrate = "skyeng_immo.install.after_migrate"
 # sweep in ERPNext's ~50 built-in cards and charts and make this app own and
 # overwrite them on every migrate.
 fixtures = [
+	# Re-imported on every migrate, which restores desk_access = 0 if changed on a site.
+	{"dt": "Role", "filters": [["name", "in", ["Landlord", "Tenant"]]]},
 	{
 		"dt": "Number Card",
 		"filters": [

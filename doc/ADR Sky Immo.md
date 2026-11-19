@@ -1,4 +1,3 @@
-
 # ADR-xxx: Sky-immo, a landlord and tenant app on PropMS
 
 | Status           | Proposed                               |
@@ -55,10 +54,10 @@ Mode B, "A customer owns an instance". A customer who owns several properties, o
 
 ## Implementation
 
-| Order | Step                                                                   | Ticket |
-| ----- | ---------------------------------------------------------------------- | ------ |
-| 1     | App foundation, roles and settings                                     | -      |
-| 2     | Sign-in, invitations and access rules for each role                    | -      |
-| 3     | Landlord screens, including maintenance approval, also used in mode B  | -      |
-| 4     | Tenant screens, including the maintenance request and its closure      | -      |
-| 5     | Tests: two landlords on one site, and every flow on each PropMS update | -      |
+| Order | Step                                                                   | Ticket  |
+| ----- | ---------------------------------------------------------------------- | ------- |
+| 1     | App foundation, roles and settings                                     | IMMO-02 |
+| 2     | Sign-in, invitations and access rules for each role                    | MMO-03  |
+| 3     | Landlord screens, including maintenance approval, also used in mode B  | IMMO-04 |
+| 4     | Tenant screens, including the maintenance request and its closure      | IMMO-05 |
+| 5     | Tests: two landlords on one site, and every flow on each PropMS update | IMMO-06 |

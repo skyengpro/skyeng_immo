@@ -17,6 +17,11 @@ venv/
 # Tooling caches
 .ruff_cache/
 
+# Frontend dependencies and build output (rebuilt by `bench build`)
+node_modules/
+skyeng_immo/public/frontend/
+skyeng_immo/www/sky_immo.html
+
 # IDEs, editors and OS files
 .vscode/
 .idea/

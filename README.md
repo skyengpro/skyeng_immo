@@ -8,7 +8,14 @@ landlords and tenants their own interface on the same site:
 - **Landlord**: their properties and units, tenants, invoices, and approval of maintenance requests.
 - **Tenant**: their units, leases, invoices and receipts, and maintenance requests.
 
-It works in two modes: Sky owns the instance (mode A), or a customer owns it (mode B).
+It works in two modes: Sky owns the instance (mode A), or a customer owns it (mode B). The mode of
+a site is set in **Sky Immo Settings** (System Manager and Property Manager only).
+
+## Sky-immo app
+
+Served at `/sky-immo` on the same site (Vue 3 + frappe-ui, in `frontend/`). It is built by
+`bench build` and can be added to a phone's home screen. Roles `Landlord` and `Tenant` have no Desk
+access. Interface in English and French.
 
 ## Documentation
 
