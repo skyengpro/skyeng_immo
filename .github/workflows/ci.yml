@@ -17,73 +17,75 @@ concurrency:
 
 jobs:
   tests:
+    # GitHub-hosted: the org ARC runners have no Docker for `services:` and too little disk for a
+    # full ERPNext bench.
     runs-on: ubuntu-latest
     name: Server (Frappe version-16, ERPNext, PropMS)
+    timeout-minutes: 60
+
+    services:
+      redis-cache:
+        image: redis:alpine
+        ports:
+          - 13000:6379
+      redis-queue:
+        image: redis:alpine
+        ports:
+          - 11000:6379
+      mariadb:
+        image: mariadb:11.8
+        env:
+          MYSQL_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: --health-cmd="mariadb-admin ping" --health-interval=5s --health-timeout=2s --health-retries=3
 
     steps:
       - name: Clone
         uses: actions/checkout@v7
 
-      - name: Setup Python
-        uses: actions/setup-python@v7
+      # uv installs Python 3.14 itself, caches its downloads and prunes the cache at the end
+      # (replaces setup-python, the uv cache step and `uv cache prune`).
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v10.4.0
         with:
           python-version: '3.14'
+          enable-cache: true
+          cache-dependency-glob: '**/pyproject.toml'
 
+      # bench runs `yarn install` for frappe, erpnext and this app, so Node stays. No check-latest:
+      # it forces a download instead of using the version preinstalled on the runner.
       - name: Setup Node
         uses: actions/setup-node@v7
         with:
           node-version: 24
-          check-latest: true
 
-      # bench installs apps with uv, so its cache is the one worth keeping.
-      - name: Cache uv
+      - name: Get yarn cache directory path
+        id: yarn-cache-dir-path
+        run: echo "dir=$(yarn cache dir)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache yarn
         uses: actions/cache@v6
         with:
-          path: ~/.cache/uv
-          key: ${{ runner.os }}-uv-${{ hashFiles('**/pyproject.toml') }}
+          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
           restore-keys: |
-            ${{ runner.os }}-uv-
+            ${{ runner.os }}-yarn-
 
-      # ARC runners run jobs in a Kubernetes pod (container mode): `services:` is not available,
-      # so MariaDB and Redis run inside the job container, on the ports bench expects by default.
-      - name: Start MariaDB and Redis
+      - name: Install MariaDB client
         run: |
           sudo apt-get update
-          # pkg-config is required by bench; libmariadb-dev and the compiler toolchain build mysqlclient.
-          sudo apt-get install -y --no-install-recommends \
-            mariadb-server mariadb-client redis-server \
-            pkg-config libmariadb-dev build-essential libffi-dev libssl-dev
-
-          sudo redis-server --port 13000 --daemonize yes
-          sudo redis-server --port 11000 --daemonize yes
-
-          sudo mkdir -p /run/mysqld
-          sudo chown mysql:mysql /run/mysqld
-          if [ ! -d /var/lib/mysql/mysql ]; then
-            sudo mariadb-install-db --user=mysql --datadir=/var/lib/mysql
-          fi
-          sudo setsid nohup mariadbd --user=mysql \
-            --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci \
-            > "$RUNNER_TEMP/mariadb.log" 2>&1 &
-
-          for _ in $(seq 1 30); do
-            sudo mariadb -e "SELECT 1" >/dev/null 2>&1 && break
-            sleep 1
-          done
-          sudo mariadb -e "
-            ALTER USER 'root'@'localhost' IDENTIFIED BY 'root';
-            CREATE USER IF NOT EXISTS 'root'@'%' IDENTIFIED BY 'root';
-            GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' WITH GRANT OPTION;
-            FLUSH PRIVILEGES;"
-          mariadb -h 127.0.0.1 -uroot -proot -e "SELECT VERSION()"
+          sudo apt-get install -y --no-install-recommends mariadb-client
 
       - name: Init bench
         run: |
-          pip install frappe-bench
+          uv tool install frappe-bench
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          export PATH="$HOME/.local/bin:$PATH"
           bench init \
             --skip-redis-config-generation \
             --skip-assets \
-            --python "$(which python)" \
+            --python "$(uv python find 3.14)" \
             --frappe-branch version-16 \
             ~/frappe-bench
 
@@ -115,17 +117,11 @@ jobs:
         env:
           TYPE: server
 
-      # Drops wheels uv can rebuild quickly, keeping the saved cache small.
-      - name: Prune uv cache
-        if: always()
-        run: uv cache prune --ci || true
-
       - name: Show bench logs on failure
         if: failure()
         working-directory: /home/runner/frappe-bench
         run: |
           cat bench_start.log 2>/dev/null || true
-          cat "$RUNNER_TEMP/mariadb.log" 2>/dev/null || true
           for f in logs/*.log; do
             echo "== $f =="
             cat "$f"
