@@ -108,7 +108,9 @@ jobs:
           uv tool install frappe-bench
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
           export PATH="$HOME/.local/bin:$PATH"
+          # --no-backups: no crontab in the image, and a 6-hourly backup job is useless in a throwaway CI bench.
           bench init \
+            --no-backups \
             --skip-redis-config-generation \
             --skip-assets \
             --python "$(uv python find 3.14)" \
