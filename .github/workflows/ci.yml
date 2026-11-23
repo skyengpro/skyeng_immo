@@ -45,9 +45,20 @@ jobs:
         with:
           node-version: 24
 
+      # setup-node ships npm and corepack, not yarn; GitHub-hosted runners preinstall it, the org image
+      # does not. bench runs `yarn install` (classic) for frappe, erpnext and this app.
+      - name: Install yarn
+        run: |
+          npm install --global yarn@1.22.22
+          yarn --version
+
+      # Fails here if yarn is missing, instead of handing an empty path to the cache step.
       - name: Get yarn cache directory path
         id: yarn-cache-dir-path
-        run: echo "dir=$(yarn cache dir)" >> "$GITHUB_OUTPUT"
+        run: |
+          dir="$(yarn cache dir)"
+          test -n "$dir"
+          echo "dir=$dir" >> "$GITHUB_OUTPUT"
 
       - name: Cache yarn
         uses: actions/cache@v6
@@ -132,13 +143,19 @@ jobs:
         env:
           TYPE: server
 
+      # No working-directory: the bench does not exist when the job fails before `Init bench`.
       - name: Show bench logs on failure
         if: failure()
-        working-directory: /home/runner/frappe-bench
         run: |
-          cat bench_start.log 2>/dev/null || true
           cat "$RUNNER_TEMP/mariadb.log" 2>/dev/null || true
+          if [ ! -d "$HOME/frappe-bench" ]; then
+            echo "No bench at $HOME/frappe-bench: the job failed before Init bench."
+            exit 0
+          fi
+          cd "$HOME/frappe-bench"
+          cat bench_start.log 2>/dev/null || true
           for f in logs/*.log; do
+            [ -e "$f" ] || continue
             echo "== $f =="
             cat "$f"
           done
