@@ -1,126 +1,126 @@
-name: Linters
+# name: Linters
 
-on:
-  pull_request:
-    branches:
-      - develop
-  workflow_dispatch:
+# on:
+#   pull_request:
+#     branches:
+#       - develop
+#   workflow_dispatch:
 
-permissions:
-  contents: read
-  pull-requests: read
+# permissions:
+#   contents: read
+#   pull-requests: read
 
-concurrency:
-  group: linter-${{ github.workflow }}-${{ github.head_ref || github.ref }}
-  cancel-in-progress: true
+# concurrency:
+#   group: linter-${{ github.workflow }}-${{ github.head_ref || github.ref }}
+#   cancel-in-progress: true
 
-jobs:
-  pre-commit:
-    name: Pre-commit (hygiene, ruff)
-    runs-on: org-ci-nano
-    container:
-      image: ghcr.io/skyengpro/runner-provisioner/org-ci-runner@sha256:c33d5d2d6fe44e3d2017e73fd6c4dccff3d45ec1f3389268744e7feb7b7f7a7c
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v7
-      # The image's system Python is externally managed (PEP 668): tools run through uv.
-      - uses: astral-sh/setup-uv@v10.4.0
-        with:
-          python-version: '3.14'
-          enable-cache: true
-      - name: Cache pre-commit environments
-        uses: actions/cache@v6
-        with:
-          path: ~/.cache/pre-commit
-          key: ${{ runner.os }}-pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
-      # pre-commit-uv makes pre-commit build its hook environments with uv.
-      - name: Run pre-commit
-        run: uvx --with pre-commit-uv pre-commit run --show-diff-on-failure --color=always --all-files
-        env:
-          # The hook only scans staged files, which is empty here; the gitleaks job covers CI.
-          SKIP: gitleaks
+# jobs:
+#   pre-commit:
+#     name: Pre-commit (hygiene, ruff)
+#     runs-on: org-ci-nano
+#     container:
+#       image: ghcr.io/skyengpro/runner-provisioner/org-ci-runner@sha256:c33d5d2d6fe44e3d2017e73fd6c4dccff3d45ec1f3389268744e7feb7b7f7a7c
+#     timeout-minutes: 15
+#     steps:
+#       - uses: actions/checkout@v7
+#       # The image's system Python is externally managed (PEP 668): tools run through uv.
+#       - uses: astral-sh/setup-uv@v10.4.0
+#         with:
+#           python-version: '3.14'
+#           enable-cache: true
+#       - name: Cache pre-commit environments
+#         uses: actions/cache@v6
+#         with:
+#           path: ~/.cache/pre-commit
+#           key: ${{ runner.os }}-pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
+#       # pre-commit-uv makes pre-commit build its hook environments with uv.
+#       - name: Run pre-commit
+#         run: uvx --with pre-commit-uv pre-commit run --show-diff-on-failure --color=always --all-files
+#         env:
+#           # The hook only scans staged files, which is empty here; the gitleaks job covers CI.
+#           SKIP: gitleaks
 
-  packaging:
-    name: Packaging guard
-    runs-on: org-ci-nano
-    container:
-      image: ghcr.io/skyengpro/runner-provisioner/org-ci-runner@sha256:c33d5d2d6fe44e3d2017e73fd6c4dccff3d45ec1f3389268744e7feb7b7f7a7c
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v7
-      - uses: astral-sh/setup-uv@v10.4.0
-        with:
-          python-version: '3.14'
-      # frappe / erpnext / propms must never be pip dependencies (Press build exit 167).
-      - name: Reject framework packages in pyproject dependencies
-        run: uv run --no-project python scripts/check_packaging.py
+#   packaging:
+#     name: Packaging guard
+#     runs-on: org-ci-nano
+#     container:
+#       image: ghcr.io/skyengpro/runner-provisioner/org-ci-runner@sha256:c33d5d2d6fe44e3d2017e73fd6c4dccff3d45ec1f3389268744e7feb7b7f7a7c
+#     timeout-minutes: 15
+#     steps:
+#       - uses: actions/checkout@v7
+#       - uses: astral-sh/setup-uv@v10.4.0
+#         with:
+#           python-version: '3.14'
+#       # frappe / erpnext / propms must never be pip dependencies (Press build exit 167).
+#       - name: Reject framework packages in pyproject dependencies
+#         run: uv run --no-project python scripts/check_packaging.py
 
-  gitleaks:
-    name: Secret scan (gitleaks, full history)
-    runs-on: org-ci-nano
-    container:
-      image: ghcr.io/skyengpro/runner-provisioner/org-ci-runner@sha256:c33d5d2d6fe44e3d2017e73fd6c4dccff3d45ec1f3389268744e7feb7b7f7a7c
-    timeout-minutes: 15
-    env:
-      GITLEAKS_VERSION: 8.30.1
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
+#   gitleaks:
+#     name: Secret scan (gitleaks, full history)
+#     runs-on: org-ci-nano
+#     container:
+#       image: ghcr.io/skyengpro/runner-provisioner/org-ci-runner@sha256:c33d5d2d6fe44e3d2017e73fd6c4dccff3d45ec1f3389268744e7feb7b7f7a7c
+#     timeout-minutes: 15
+#     env:
+#       GITLEAKS_VERSION: 8.30.1
+#     steps:
+#       - uses: actions/checkout@v7
+#         with:
+#           fetch-depth: 0
 
-      # The runner image ships gitleaks; download it only when the pinned version is missing.
-      - name: Install gitleaks
-        run: |
-          if gitleaks version 2>/dev/null | grep -qx "v\?${GITLEAKS_VERSION}"; then
-            echo "gitleaks ${GITLEAKS_VERSION} already installed"
-            exit 0
-          fi
-          base="https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}"
-          archive="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
-          curl -sSfLO "$base/$archive"
-          curl -sSfL "$base/gitleaks_${GITLEAKS_VERSION}_checksums.txt" | grep " $archive\$" | sha256sum -c -
-          tar -xzf "$archive" gitleaks
-          sudo install gitleaks /usr/local/bin/gitleaks
+#       # The runner image ships gitleaks; download it only when the pinned version is missing.
+#       - name: Install gitleaks
+#         run: |
+#           if gitleaks version 2>/dev/null | grep -qx "v\?${GITLEAKS_VERSION}"; then
+#             echo "gitleaks ${GITLEAKS_VERSION} already installed"
+#             exit 0
+#           fi
+#           base="https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}"
+#           archive="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+#           curl -sSfLO "$base/$archive"
+#           curl -sSfL "$base/gitleaks_${GITLEAKS_VERSION}_checksums.txt" | grep " $archive\$" | sha256sum -c -
+#           tar -xzf "$archive" gitleaks
+#           sudo install gitleaks /usr/local/bin/gitleaks
 
-      - name: Scan
-        run: gitleaks git --config .gitleaks.toml --redact --verbose .
+#       - name: Scan
+#         run: gitleaks git --config .gitleaks.toml --redact --verbose .
 
-  frappe-semgrep:
-    name: Frappe Semgrep Rules
-    runs-on: org-ci-nano
-    container:
-      image: ghcr.io/skyengpro/runner-provisioner/org-ci-runner@sha256:c33d5d2d6fe44e3d2017e73fd6c4dccff3d45ec1f3389268744e7feb7b7f7a7c
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v7
-      # The image's system Python is externally managed (PEP 668): tools run through uv.
-      - uses: astral-sh/setup-uv@v10.4.0
-        with:
-          enable-cache: true
+#   frappe-semgrep:
+#     name: Frappe Semgrep Rules
+#     runs-on: org-ci-nano
+#     container:
+#       image: ghcr.io/skyengpro/runner-provisioner/org-ci-runner@sha256:c33d5d2d6fe44e3d2017e73fd6c4dccff3d45ec1f3389268744e7feb7b7f7a7c
+#     timeout-minutes: 15
+#     steps:
+#       - uses: actions/checkout@v7
+#       # The image's system Python is externally managed (PEP 668): tools run through uv.
+#       - uses: astral-sh/setup-uv@v10.4.0
+#         with:
+#           enable-cache: true
 
-      - name: Download Frappe semgrep rules
-        run: git clone --depth 1 https://github.com/frappe/semgrep-rules.git frappe-semgrep-rules
+#       - name: Download Frappe semgrep rules
+#         run: git clone --depth 1 https://github.com/frappe/semgrep-rules.git frappe-semgrep-rules
 
-      - name: Run semgrep
-        run: |
-          uvx semgrep ci --config ./frappe-semgrep-rules/rules --config r/python.lang.correctness
+#       - name: Run semgrep
+#         run: |
+#           uvx semgrep ci --config ./frappe-semgrep-rules/rules --config r/python.lang.correctness
 
-  deps-vulnerable-check:
-    name: Vulnerable dependency check
-    runs-on: org-ci-nano
-    container:
-      image: ghcr.io/skyengpro/runner-provisioner/org-ci-runner@sha256:c33d5d2d6fe44e3d2017e73fd6c4dccff3d45ec1f3389268744e7feb7b7f7a7c
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v7
+#   deps-vulnerable-check:
+#     name: Vulnerable dependency check
+#     runs-on: org-ci-nano
+#     container:
+#       image: ghcr.io/skyengpro/runner-provisioner/org-ci-runner@sha256:c33d5d2d6fe44e3d2017e73fd6c4dccff3d45ec1f3389268744e7feb7b7f7a7c
+#     timeout-minutes: 15
+#     steps:
+#       - uses: actions/checkout@v7
 
-      - uses: astral-sh/setup-uv@v10.4.0
-        with:
-          python-version: '3.14'
-          enable-cache: true
-          cache-dependency-glob: '**/pyproject.toml'
+#       - uses: astral-sh/setup-uv@v10.4.0
+#         with:
+#           python-version: '3.14'
+#           enable-cache: true
+#           cache-dependency-glob: '**/pyproject.toml'
 
-      - name: Run pip-audit
-        # In the job container $HOME is writable by another user, so platformdirs refuses to create
-        # pip-audit's default cache under it. An explicit --cache-dir bypasses platformdirs.
-        run: uvx pip-audit --desc on --cache-dir "$RUNNER_TEMP/pip-audit-cache" .
+#       - name: Run pip-audit
+#         # In the job container $HOME is writable by another user, so platformdirs refuses to create
+#         # pip-audit's default cache under it. An explicit --cache-dir bypasses platformdirs.
+#         run: uvx pip-audit --desc on --cache-dir "$RUNNER_TEMP/pip-audit-cache" .

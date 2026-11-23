@@ -103,7 +103,11 @@ jobs:
             FLUSH PRIVILEGES;"
           mariadb -h 127.0.0.1 -uroot -proot -e "SELECT VERSION()"
 
+      # Each framework app is pinned to the commit last tested locally. Bump them together.
+      # payments is for the test suite only: Frappe's test records follow ERPNext's links to it.
       - name: Init bench
+        env:
+          FRAPPE_SHA: 2df0425571ebbaed878eabc3edc5b7e7c3327ae0
         run: |
           uv tool install frappe-bench
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
@@ -116,21 +120,38 @@ jobs:
             --python "$(uv python find 3.14)" \
             --frappe-branch version-16 \
             ~/frappe-bench
+          # bench clones shallow: fetch the pinned commit itself before checking it out.
+          git -C ~/frappe-bench/apps/frappe fetch --depth 1 https://github.com/frappe/frappe "$FRAPPE_SHA"
+          git -C ~/frappe-bench/apps/frappe checkout --quiet FETCH_HEAD
 
       - name: Get apps
         working-directory: /home/runner/frappe-bench
+        env:
+          PAYMENTS_SHA: cca07d9f9392e2ea0e521c5975151db9e4b6c321
+          ERPNEXT_SHA: 886ab6ae187244e7f1b852393384ab6019d56264
+          PROPMS_SHA: 554593643564f6e71cbfe1b22787ecb198f9183c
         run: |
+          pin() {
+            git -C "apps/$1" fetch --depth 1 "$2" "$3"
+            git -C "apps/$1" checkout --quiet FETCH_HEAD
+          }
           # required_apps in hooks.py: the landlord and tenant app reads PropMS Property / Lease
           # and the ERPNext invoices PropMS generates from them.
+          bench get-app payments --branch version-16
+          pin payments https://github.com/frappe/payments "$PAYMENTS_SHA"
           bench get-app erpnext --branch version-16
+          pin erpnext https://github.com/frappe/erpnext "$ERPNEXT_SHA"
           bench get-app propms https://github.com/Aakvatech-Limited/PropMS --branch version-16
+          pin propms https://github.com/Aakvatech-Limited/PropMS "$PROPMS_SHA"
           bench get-app skyeng_immo "$GITHUB_WORKSPACE"
+          # Runs after the checkouts so Python and Node requirements match the pinned commits.
           bench setup requirements --dev
 
       - name: Create site and install apps
         working-directory: /home/runner/frappe-bench
         run: |
           bench new-site --db-root-password root --admin-password admin test_site
+          bench --site test_site install-app payments
           bench --site test_site install-app erpnext
           bench --site test_site install-app propms
           bench --site test_site install-app skyeng_immo

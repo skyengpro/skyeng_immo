@@ -27,3 +27,23 @@ access. Interface in English and French.
 ## Requirements
 
 Frappe, ERPNext and PropMS on `version-16`. PropMS is not modified by this app.
+
+### Tested versions
+
+CI runs against these exact commits, pinned in `.github/workflows/ci.yml`. Check out the same
+commits on a local bench to reproduce a CI run.
+
+| App | Branch | Version | Commit | Date |
+| --- | --- | --- | --- | --- |
+| [frappe](https://github.com/frappe/frappe) | `version-16` | 16.60.2 | `2df0425571ebbaed878eabc3edc5b7e7c3327ae0` | 2026-11-18 |
+| [erpnext](https://github.com/frappe/erpnext) | `version-16` | 16.60.0 | `886ab6ae187244e7f1b852393384ab6019d56264` | 2026-11-17 |
+| [propms](https://github.com/Aakvatech-Limited/PropMS) | `version-16` | 16.1.0 | `554593643564f6e71cbfe1b22787ecb198f9183c` | 2026-10-11 |
+| [payments](https://github.com/frappe/payments) | `version-16` | 0.0.1 | `cca07d9f9392e2ea0e521c5975151db9e4b6c321` | 2026-05-26 |
+
+The app takes no payment and `payments` is not in `required_apps`. The test suite needs it because
+ERPNext's Payment Gateway Account links to its Payment Gateway, and Frappe's test record generator
+follows every link.
+
+PropMS commits from 2026-11-14 onwards are not supported yet. They make `Property.status` a link to
+Property Status and create those records only in a patch, which a fresh install skips, so a new site
+cannot save a property. Bump all pins together after a green run on a fresh local site.

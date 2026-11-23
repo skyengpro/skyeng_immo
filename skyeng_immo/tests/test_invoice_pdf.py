@@ -18,6 +18,8 @@ class TestInvoicePdf(IntegrationTestCase):
 		super().setUp()
 		set_request(method="GET", path="/api/method/skyeng_immo.api.download_invoice_pdf")
 		frappe.local.response = frappe._dict()
+		# New sites default to Chrome, which tests cannot start. Use the engine mocked below.
+		self.enterContext(self.change_settings("Print Settings", pdf_generator="wkhtmltopdf"))
 		# wkhtmltopdf fetches the print CSS from the request host, where no server listens in tests.
 		# The HTML it would receive is kept, to check the print format rendered.
 		patcher = patch(
