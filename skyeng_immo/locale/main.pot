@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: SkyEng Immo VERSION\n"
 "Report-Msgid-Bugs-To: contact@skyengpro.com\n"
-"POT-Creation-Date: 2026-11-16 15:23+0000\n"
-"PO-Revision-Date: 2026-11-16 15:23+0000\n"
+"POT-Creation-Date: 2026-11-17 13:29+0000\n"
+"PO-Revision-Date: 2026-11-17 13:29+0000\n"
 "Last-Translator: contact@skyengpro.com\n"
 "Language-Team: contact@skyengpro.com\n"
 "MIME-Version: 1.0\n"
@@ -153,6 +153,18 @@ msgstr ""
 msgid "Couverte"
 msgstr ""
 
+#: skyeng_immo/invitation.py:26
+msgid "Customer {0} has no email address. Add one to their primary contact."
+msgstr ""
+
+#: skyeng_immo/invitation.py:22
+msgid "Customer {0} is disabled."
+msgstr ""
+
+#: skyeng_immo/invitation.py:30
+msgid "Customer {0} owns no property and has no active lease."
+msgstr ""
+
 #. Label of the move_in_date (Date) field in DocType 'Occupant'
 #: skyeng_immo/immobilier/doctype/occupant/occupant.json
 msgid "Date d'entree"
@@ -252,6 +264,14 @@ msgstr ""
 msgid "Immeuble / site"
 msgstr ""
 
+#: skyeng_immo/public/js/customer.js:16
+msgid "Invitation sent to {0}"
+msgstr ""
+
+#: skyeng_immo/public/js/customer.js:8
+msgid "Invite to Sky-immo"
+msgstr ""
+
 #: skyeng_immo/immobilier/doctype/visitor_log/visitor_log.py:15
 msgid "L'heure d'entree est dans le futur."
 msgstr ""
@@ -338,6 +358,10 @@ msgstr ""
 #. Label of the level (Select) field in DocType 'Parking Space'
 #: skyeng_immo/immobilier/doctype/parking_space/parking_space.json
 msgid "Niveau"
+msgstr ""
+
+#: skyeng_immo/invitation.py:40
+msgid "No outgoing email account is set up, so the invitation cannot be sent."
 msgstr ""
 
 #. Label of the emergency_contact_name (Data) field in DocType 'Occupant'
@@ -523,6 +547,10 @@ msgstr ""
 msgid "Scan de la piece"
 msgstr ""
 
+#: skyeng_immo/public/js/customer.js:9
+msgid "Send an invitation to {0}?"
+msgstr ""
+
 #. Label of the naming_series (Select) field in DocType 'Occupant'
 #. Label of the naming_series (Select) field in DocType 'Visitor Log'
 #: skyeng_immo/immobilier/doctype/occupant/occupant.json
@@ -620,6 +648,10 @@ msgstr ""
 #. Label of the visiting_property (Link) field in DocType 'Visitor Log'
 #: skyeng_immo/immobilier/doctype/visitor_log/visitor_log.json
 msgid "Unite visitee"
+msgstr ""
+
+#: skyeng_immo/invitation.py:69
+msgid "User {0} is disabled. Enable them before sending an invitation."
 msgstr ""
 
 #. Option for the 'Type' (Select) field in DocType 'Vehicle'

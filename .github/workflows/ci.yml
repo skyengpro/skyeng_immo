@@ -17,37 +17,59 @@ concurrency:
 
 jobs:
   tests:
+    # ARC pool with a 20Gi work volume: org-ci-nano's 2Gi is too small for a full ERPNext bench (#15).
     runs-on: org-ci-medium
+    # The org runners only accept jobs that run in a container.
     container:
       image: ghcr.io/skyengpro/runner-provisioner/org-ci-runner@sha256:c33d5d2d6fe44e3d2017e73fd6c4dccff3d45ec1f3389268744e7feb7b7f7a7c
     name: Server (Frappe version-16, ERPNext, PropMS)
+    timeout-minutes: 60
 
     steps:
       - name: Clone
         uses: actions/checkout@v7
 
-      - name: Setup Python
-        uses: actions/setup-python@v7
+      # uv installs Python 3.14 itself, caches its downloads and prunes the cache at the end
+      # (replaces setup-python, the uv cache step and `uv cache prune`).
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v10.4.0
         with:
           python-version: '3.14'
+          enable-cache: true
+          cache-dependency-glob: '**/pyproject.toml'
 
+      # bench runs `yarn install` for frappe, erpnext and this app, so Node stays. No check-latest:
+      # it forces a download instead of using the version preinstalled on the runner.
       - name: Setup Node
         uses: actions/setup-node@v7
         with:
           node-version: 24
-          check-latest: true
 
-      # bench installs apps with uv, so its cache is the one worth keeping.
-      - name: Cache uv
+      # setup-node ships npm and corepack, not yarn; GitHub-hosted runners preinstall it, the org image
+      # does not. bench runs `yarn install` (classic) for frappe, erpnext and this app.
+      - name: Install yarn
+        run: |
+          npm install --global yarn@1.22.22
+          yarn --version
+
+      # Fails here if yarn is missing, instead of handing an empty path to the cache step.
+      - name: Get yarn cache directory path
+        id: yarn-cache-dir-path
+        run: |
+          dir="$(yarn cache dir)"
+          test -n "$dir"
+          echo "dir=$dir" >> "$GITHUB_OUTPUT"
+
+      - name: Cache yarn
         uses: actions/cache@v6
         with:
-          path: ~/.cache/uv
-          key: ${{ runner.os }}-uv-${{ hashFiles('**/pyproject.toml') }}
+          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
           restore-keys: |
-            ${{ runner.os }}-uv-
+            ${{ runner.os }}-yarn-
 
-      # ARC runners run jobs in a Kubernetes pod (container mode): `services:` is not available,
-      # so MariaDB and Redis run inside the job container, on the ports bench expects by default.
+      # ARC runs jobs in a Kubernetes pod (container mode): `services:` is not available, so MariaDB
+      # and Redis run inside the job container, on the ports bench expects by default.
       - name: Start MariaDB and Redis
         run: |
           sudo apt-get update
@@ -55,6 +77,8 @@ jobs:
           sudo apt-get install -y --no-install-recommends \
             mariadb-server mariadb-client redis-server \
             pkg-config libmariadb-dev build-essential libffi-dev libssl-dev
+          sudo apt-get clean
+          sudo rm -rf /var/lib/apt/lists/*
 
           sudo redis-server --port 13000 --daemonize yes
           sudo redis-server --port 11000 --daemonize yes
@@ -79,30 +103,55 @@ jobs:
             FLUSH PRIVILEGES;"
           mariadb -h 127.0.0.1 -uroot -proot -e "SELECT VERSION()"
 
+      # Each framework app is pinned to the commit last tested locally. Bump them together.
+      # payments is for the test suite only: Frappe's test records follow ERPNext's links to it.
       - name: Init bench
+        env:
+          FRAPPE_SHA: 2df0425571ebbaed878eabc3edc5b7e7c3327ae0
         run: |
-          pip install frappe-bench
+          uv tool install frappe-bench
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          export PATH="$HOME/.local/bin:$PATH"
+          # --no-backups: no crontab in the image, and a 6-hourly backup job is useless in a throwaway CI bench.
           bench init \
+            --no-backups \
             --skip-redis-config-generation \
             --skip-assets \
-            --python "$(which python)" \
+            --python "$(uv python find 3.14)" \
             --frappe-branch version-16 \
             ~/frappe-bench
+          # bench clones shallow: fetch the pinned commit itself before checking it out.
+          git -C ~/frappe-bench/apps/frappe fetch --depth 1 https://github.com/frappe/frappe "$FRAPPE_SHA"
+          git -C ~/frappe-bench/apps/frappe checkout --quiet FETCH_HEAD
 
       - name: Get apps
         working-directory: /home/runner/frappe-bench
+        env:
+          PAYMENTS_SHA: cca07d9f9392e2ea0e521c5975151db9e4b6c321
+          ERPNEXT_SHA: 886ab6ae187244e7f1b852393384ab6019d56264
+          PROPMS_SHA: 554593643564f6e71cbfe1b22787ecb198f9183c
         run: |
+          pin() {
+            git -C "apps/$1" fetch --depth 1 "$2" "$3"
+            git -C "apps/$1" checkout --quiet FETCH_HEAD
+          }
           # required_apps in hooks.py: the landlord and tenant app reads PropMS Property / Lease
           # and the ERPNext invoices PropMS generates from them.
+          bench get-app payments --branch version-16
+          pin payments https://github.com/frappe/payments "$PAYMENTS_SHA"
           bench get-app erpnext --branch version-16
+          pin erpnext https://github.com/frappe/erpnext "$ERPNEXT_SHA"
           bench get-app propms https://github.com/Aakvatech-Limited/PropMS --branch version-16
+          pin propms https://github.com/Aakvatech-Limited/PropMS "$PROPMS_SHA"
           bench get-app skyeng_immo "$GITHUB_WORKSPACE"
+          # Runs after the checkouts so Python and Node requirements match the pinned commits.
           bench setup requirements --dev
 
       - name: Create site and install apps
         working-directory: /home/runner/frappe-bench
         run: |
           bench new-site --db-root-password root --admin-password admin test_site
+          bench --site test_site install-app payments
           bench --site test_site install-app erpnext
           bench --site test_site install-app propms
           bench --site test_site install-app skyeng_immo
@@ -117,18 +166,19 @@ jobs:
         env:
           TYPE: server
 
-      # Drops wheels uv can rebuild quickly, keeping the saved cache small.
-      - name: Prune uv cache
-        if: always()
-        run: uv cache prune --ci || true
-
+      # No working-directory: the bench does not exist when the job fails before `Init bench`.
       - name: Show bench logs on failure
         if: failure()
-        working-directory: /home/runner/frappe-bench
         run: |
-          cat bench_start.log 2>/dev/null || true
           cat "$RUNNER_TEMP/mariadb.log" 2>/dev/null || true
+          if [ ! -d "$HOME/frappe-bench" ]; then
+            echo "No bench at $HOME/frappe-bench: the job failed before Init bench."
+            exit 0
+          fi
+          cd "$HOME/frappe-bench"
+          cat bench_start.log 2>/dev/null || true
           for f in logs/*.log; do
+            [ -e "$f" ] || continue
             echo "== $f =="
             cat "$f"
           done

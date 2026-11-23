@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: SkyEng Immo VERSION\n"
 "Report-Msgid-Bugs-To: contact@skyengpro.com\n"
-"POT-Creation-Date: 2026-11-16 15:23+0000\n"
-"PO-Revision-Date: 2026-11-16 15:23+0000\n"
+"POT-Creation-Date: 2026-11-17 11:51+0000\n"
+"PO-Revision-Date: 2026-11-17 11:51+0000\n"
 "Last-Translator: contact@skyengpro.com\n"
 "Language: fr\n"
 "Language-Team: contact@skyengpro.com\n"
@@ -155,6 +155,18 @@ msgstr ""
 msgid "Couverte"
 msgstr ""
 
+#: skyeng_immo/invitation.py
+msgid "Customer {0} has no email address. Add one to their primary contact."
+msgstr "Le client {0} n'a pas d'adresse e-mail. Ajoutez-en une à son contact principal."
+
+#: skyeng_immo/invitation.py
+msgid "Customer {0} is disabled."
+msgstr "Le client {0} est désactivé."
+
+#: skyeng_immo/invitation.py
+msgid "Customer {0} owns no property and has no active lease."
+msgstr "Le client {0} ne possède aucun bien et n'a aucun bail actif."
+
 #. Label of the move_in_date (Date) field in DocType 'Occupant'
 #: skyeng_immo/immobilier/doctype/occupant/occupant.json
 msgid "Date d'entree"
@@ -254,6 +266,14 @@ msgstr ""
 msgid "Immeuble / site"
 msgstr ""
 
+#: skyeng_immo/public/js/customer.js
+msgid "Invitation sent to {0}"
+msgstr "Invitation envoyée à {0}"
+
+#: skyeng_immo/public/js/customer.js
+msgid "Invite to Sky-immo"
+msgstr "Inviter sur Sky-immo"
+
 #: skyeng_immo/immobilier/doctype/visitor_log/visitor_log.py:15
 msgid "L'heure d'entree est dans le futur."
 msgstr ""
@@ -341,6 +361,10 @@ msgstr ""
 #: skyeng_immo/immobilier/doctype/parking_space/parking_space.json
 msgid "Niveau"
 msgstr ""
+
+#: skyeng_immo/invitation.py
+msgid "No outgoing email account is set up, so the invitation cannot be sent."
+msgstr "Aucun compte e-mail sortant n'est configuré : l'invitation ne peut pas être envoyée."
 
 #. Label of the emergency_contact_name (Data) field in DocType 'Occupant'
 #: skyeng_immo/immobilier/doctype/occupant/occupant.json
@@ -515,6 +539,10 @@ msgstr ""
 msgid "Rez-de-chaussee"
 msgstr ""
 
+#: skyeng_immo/public/js/customer.js
+msgid "Send an invitation to {0}?"
+msgstr "Envoyer une invitation à {0} ?"
+
 #. Option for the 'Type' (Select) field in DocType 'Vehicle'
 #: skyeng_immo/immobilier/doctype/vehicle/vehicle.json
 msgid "SUV / 4x4"
@@ -624,6 +652,10 @@ msgstr ""
 msgid "Unite visitee"
 msgstr ""
 
+#: skyeng_immo/invitation.py
+msgid "User {0} is disabled. Enable them before sending an invitation."
+msgstr "L'utilisateur {0} est désactivé. Réactivez-le avant d'envoyer une invitation."
+
 #. Option for the 'Type' (Select) field in DocType 'Vehicle'
 #: skyeng_immo/immobilier/doctype/vehicle/vehicle.json
 msgid "Utilitaire"
@@ -678,4 +710,3 @@ msgstr ""
 #: skyeng_immo/immobilier/doctype/parking_space/parking_space.py:21
 msgid "{0} ne depend pas de {1}. Une place ne peut etre attribuee qu'a une unite du meme site."
 msgstr ""
-
