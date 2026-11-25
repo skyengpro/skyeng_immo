@@ -1,7 +1,7 @@
 """Data entry rules the app relies on, checked when staff save in the desk (EP-01, "Desk setup").
 
-* a Property always has an owner (``unit_owner``), even when it is the company itself:
-  that is what decides which landlord sees it;
+* a Property always has an owner: its own ``unit_owner`` or that of one of its parent properties,
+  even when it is the company itself. That is what decides which landlord sees it;
 * a Lease has a single Customer, used as tenant and as payer on every lease line:
   that is what decides which tenant sees it and its invoices.
 """
@@ -11,13 +11,19 @@ from frappe import _
 
 
 def validate_property(doc, method=None):
-	if not doc.unit_owner:
+	if not doc.unit_owner and not _parent_has_owner(doc.get("parent_property")):
 		frappe.throw(
 			_(
-				"Please set the owner (Unit Owner) of {0}. Use the company's own Customer when it owns the property."
+				"Please set the owner (Unit Owner) of {0}, or of one of its parent properties. Use the company's own Customer when it owns the property."
 			).format(frappe.bold(doc.name1 or doc.name)),
 			title=_("Owner missing"),
 		)
+
+
+def _parent_has_owner(parent: str | None) -> bool:
+	from .maintenance import effective_owner
+
+	return bool(effective_owner(parent))
 
 
 def validate_lease(doc, method=None):

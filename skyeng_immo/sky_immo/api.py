@@ -8,6 +8,7 @@ the tenant's maintenance request, plus their own language preference.
 
 import base64
 import binascii
+import html
 import re
 
 import frappe
@@ -24,7 +25,7 @@ from frappe.utils import (
 	today,
 )
 
-from . import data
+from . import data, maintenance
 from .access import Scope, app_role, get_scope, not_found
 
 LANGUAGES = ("fr", "en")
@@ -392,16 +393,24 @@ def download(kind: str, name: str):
 # --------------------------------------------------------------------------- #
 
 
+def _issue_scope(scope: Scope) -> tuple[dict, list]:
+	"""Requests this user may see: their own as a tenant, those of their properties as landlord or manager."""
+	if scope.role == "tenant":
+		return {}, [
+			["Issue", "customer", "in", scope.customers or [""]],
+			["Issue", "raised_by", "=", scope.user],
+		]
+	if scope.is_manager:
+		return {}, []
+	return {"property_name": ["in", list(scope.properties()) or [""]]}, []
+
+
 def _tenant_issue_filters(scope: Scope) -> tuple[dict, list]:
-	"""Requests filed for the tenant's Customer, or by the tenant themself."""
-	return {}, [
-		["Issue", "customer", "in", scope.customers or [""]],
-		["Issue", "raised_by", "=", scope.user],
-	]
+	return _issue_scope(scope)
 
 
 def _tenant_issues(scope: Scope, limit: int | None = None) -> list[dict]:
-	filters, or_filters = _tenant_issue_filters(scope)
+	filters, or_filters = _issue_scope(scope)
 	rows = frappe.get_all(
 		"Issue",
 		filters=filters,
@@ -489,13 +498,14 @@ def list_my_leases() -> list[dict]:
 
 @frappe.whitelist(methods=["GET"])
 def list_issues() -> list[dict]:
-	return _tenant_issues(get_scope(("tenant",)))
+	"""Tenant: own requests. Landlord and manager: requests on their properties."""
+	return _tenant_issues(get_scope())
 
 
 @frappe.whitelist(methods=["GET"])
 def get_issue(name: str) -> dict:
-	scope = get_scope(("tenant",))
-	filters, or_filters = _tenant_issue_filters(scope)
+	scope = get_scope()
+	filters, or_filters = _issue_scope(scope)
 	rows = frappe.get_all(
 		"Issue",
 		filters={**filters, "name": name},
@@ -507,6 +517,8 @@ def get_issue(name: str) -> dict:
 	if not rows:
 		not_found()
 	row = rows[0]
+	owner = maintenance.effective_owner(row.property_name)
+	can_decide = scope.role != "tenant" and maintenance.can_decide(name, scope.user)
 
 	replies = frappe.get_all(
 		"Communication",
@@ -522,13 +534,15 @@ def get_issue(name: str) -> dict:
 	)
 	return {
 		**data.issue_summary(row, {}),
-		"description": strip_html(row.description or "").strip(),
-		"resolution": strip_html(row.resolution_details or "").strip() or None,
-		"photo": _issue_photo(row),
+		"description": html.unescape(strip_html(row.description or "")).strip(),
+		"resolution": html.unescape(strip_html(row.resolution_details or "")).strip() or None,
+		"hasPhoto": bool(row.attachment),
+		"canDecide": can_decide,
+		"landlordName": frappe.db.get_value("Customer", owner, "customer_name") if owner and scope.role != "tenant" else None,
 		"replies": [
 			{
 				"author": reply.sender_full_name or reply.sender,
-				"message": strip_html(reply.content or "").strip(),
+				"message": html.unescape(strip_html(reply.content or "")).strip(),
 				"at": str(reply.communication_date).replace(" ", "T"),
 			}
 			for reply in replies
@@ -536,30 +550,59 @@ def get_issue(name: str) -> dict:
 	}
 
 
-def _issue_photo(row) -> str | None:
-	"""Photo inlined as a data URL: the file is private and the tenant has no right on Issue."""
-	file_url = row.attachment
-	if not file_url:
-		return None
-	names = frappe.get_all(
-		"File",
-		filters={"attached_to_doctype": "Issue", "attached_to_name": row.name, "file_url": file_url},
-		pluck="name",
+@frappe.whitelist(methods=["GET"])
+def issue_photo(name: str):
+	"""Photo of a request, only for a user who can see that request (403 otherwise).
+
+	Frappe serves a private file to users who can read the Issue; landlords and tenants cannot,
+	so this method checks the scope, then returns the file.
+	"""
+	scope = get_scope()
+	filters, or_filters = _issue_scope(scope)
+	rows = frappe.get_all(
+		"Issue",
+		filters={**filters, "name": name},
+		or_filters=or_filters,
+		fields=["name", "attachment"],
 		limit=1,
 		ignore_permissions=True,
 	)
+	if not rows:
+		frappe.throw(_("You do not have access to this photo."), frappe.PermissionError)
+	file_url = rows[0].attachment
+	names = (
+		frappe.get_all(
+			"File",
+			filters={"attached_to_doctype": "Issue", "attached_to_name": name, "file_url": file_url},
+			pluck="name",
+			limit=1,
+			ignore_permissions=True,
+		)
+		if file_url
+		else []
+	)
 	if not names:
-		return None
+		frappe.throw(_("Not found"), frappe.DoesNotExistError)
 	file = frappe.get_doc("File", names[0])
 	try:
 		content = file.get_content()
 	except (OSError, frappe.DoesNotExistError):
-		return None
+		frappe.throw(_("Not found"), frappe.DoesNotExistError)
 	if isinstance(content, str):
 		content = content.encode()
 	extension = (file.file_name or "").rsplit(".", 1)[-1].lower()
-	mime = {"png": "image/png", "webp": "image/webp"}.get(extension, "image/jpeg")
-	return f"data:{mime};base64,{base64.b64encode(content).decode()}"
+	frappe.local.response.filename = file.file_name or f"{name}.jpg"
+	frappe.local.response.filecontent = content
+	frappe.local.response.type = "download"
+	frappe.local.response.display_content_as = "inline"
+	frappe.local.response["content_type"] = {"png": "image/png", "webp": "image/webp"}.get(extension, "image/jpeg")
+
+
+@frappe.whitelist(methods=["POST"])
+def decide_issue(name: str, decision: str) -> dict:
+	"""Landlord approves or rejects a request awaiting approval (the app's button)."""
+	get_scope(("owner", "manager"))
+	return maintenance.decide(name, decision)
 
 
 def _decode_photo(photo: str) -> tuple[bytes, str]:
@@ -626,6 +669,7 @@ def create_issue(
 			"issue_type": issue_type if frappe.db.exists("Issue Type", issue_type) else None,
 			"priority": priority if frappe.db.exists("Issue Priority", priority) else None,
 			"via_customer_portal": 1,
+			"sky_immo_status": "Awaiting approval",
 		}
 	)
 	# PropMS makes "person in charge" mandatory; staff set it when they take the request.

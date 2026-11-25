@@ -68,6 +68,12 @@ ISSUE_CATEGORIES = {
 	"air_conditioning": "Climatisation",
 	"other": "Autre",
 }
+APPROVAL_STATUS = {
+	"Awaiting approval": "awaiting_approval",
+	"In progress": "in_progress",
+	"Rejected": "rejected",
+	"Completed": "completed",
+}
 ISSUE_TYPE_TO_CATEGORY = {value: key for key, value in ISSUE_CATEGORIES.items()}
 
 
@@ -507,6 +513,7 @@ ISSUE_FIELDS = [
 	"property_name",
 	"customer",
 	"customer_name",
+	"sky_immo_status",
 ]
 
 
@@ -522,6 +529,8 @@ def issue_summary(row: frappe._dict, props: dict) -> dict:
 		"category": ISSUE_TYPE_TO_CATEGORY.get(row.issue_type or "", "other"),
 		"urgent": (row.priority or "") in ("High", "Urgent"),
 		"status": ISSUE_STATUS.get(row.status or "", "open"),
+		# Owner decision: awaiting_approval, in_progress, rejected or completed.
+		"approval": APPROVAL_STATUS.get(row.get("sky_immo_status") or "", "awaiting_approval"),
 		"createdAt": created.replace(" ", "T"),
 		"property": ref_for(row.property_name, props) if row.property_name else None,
 		"tenantName": row.customer_name or row.customer,

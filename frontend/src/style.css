@@ -1,0 +1,231 @@
+@import '@fontsource-variable/newsreader/opsz.css';
+@import '@fontsource-variable/newsreader/opsz-italic.css';
+@import '@fontsource-variable/figtree/index.css';
+@import 'frappe-ui/style.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Sky-immo colour tokens (RGB channels, used through tailwind.config.js) */
+:root {
+  --si-paper: 245 244 239;
+  --si-paper-deep: 237 235 228;
+  --si-card: 255 255 255;
+  --si-ink: 16 27 42;
+  --si-ink-soft: 63 74 89;
+  --si-ink-mute: 99 109 122;
+  --si-ink-faint: 158 164 172;
+  --si-on-ink: 255 255 255;
+  --si-line: 229 227 220;
+  --si-line-strong: 210 207 198;
+  --si-sky: 18 59 99;
+  --si-sky-deep: 11 41 71;
+  --si-sky-mid: 47 128 196;
+  --si-sky-soft: 226 238 249;
+  --si-sky-mist: 240 246 252;
+  --si-on-sky: 255 255 255;
+  --si-ok: 22 112 74;
+  --si-ok-soft: 226 243 233;
+  --si-warn: 168 82 12;
+  --si-warn-mid: 214 140 60;
+  --si-warn-soft: 252 238 220;
+  --si-alert: 170 45 38;
+  --si-alert-soft: 250 230 227;
+  --si-info: 21 94 160;
+  --si-info-soft: 226 238 249;
+  --si-shadow: 16 27 42;
+
+  /* frappe-ui variables, warmed to sit on paper */
+  --surface-base: #ffffff;
+  --surface-gray-1: #f8f7f3;
+  --surface-gray-2: #f2f1ec;
+  --surface-gray-3: #ebe9e3;
+  --surface-gray-4: #dfddd5;
+  --surface-sidebar: #ffffff;
+  --surface-elevation-1: #ffffff;
+  --surface-elevation-2: #ffffff;
+  --surface-elevation-3: #ffffff;
+  --ink-gray-4: #9ea4ac;
+  --ink-gray-5: #636d7a;
+  --ink-gray-6: #545e6b;
+  --ink-gray-7: #3f4a59;
+  --ink-gray-8: #1f2a39;
+  --ink-gray-9: #101b2a;
+  --outline-gray-1: #edebe5;
+  --outline-gray-2: #e2e0d9;
+  --outline-gray-3: #d2cfc6;
+  --outline-gray-4: #b2afa6;
+  --outline-elevation-1: #edebe5;
+  --outline-elevation-2: #e2e0d9;
+  --surface-gray-10: #101b2a;
+}
+
+/* dark: deep night blue, never pure black; the accent is lifted so it stays readable */
+[data-theme='dark'] {
+  --si-paper: 14 20 29;
+  --si-paper-deep: 24 32 44;
+  --si-card: 19 27 38;
+  --si-ink: 233 237 242;
+  --si-ink-soft: 196 204 214;
+  --si-ink-mute: 150 160 173;
+  --si-ink-faint: 100 110 124;
+  --si-on-ink: 14 20 29;
+  --si-line: 37 47 61;
+  --si-line-strong: 53 65 82;
+  --si-sky: 140 196 245;
+  --si-sky-deep: 184 220 250;
+  --si-sky-mid: 104 170 230;
+  --si-sky-soft: 27 46 68;
+  --si-sky-mist: 22 35 51;
+  --si-on-sky: 10 24 40;
+  --si-ok: 120 205 160;
+  --si-ok-soft: 24 52 40;
+  --si-warn: 240 176 110;
+  --si-warn-mid: 214 140 60;
+  --si-warn-soft: 60 40 20;
+  --si-alert: 240 140 128;
+  --si-alert-soft: 64 30 28;
+  --si-info: 140 196 245;
+  --si-info-soft: 27 46 68;
+  --si-shadow: 0 0 0;
+
+  --surface-base: #131b26;
+  --surface-gray-1: #172030;
+  --surface-gray-2: #1c2636;
+  --surface-gray-3: #233042;
+  --surface-gray-4: #2e3c50;
+  --surface-sidebar: #131b26;
+  --surface-elevation-1: #17202d;
+  --surface-elevation-2: #1a2431;
+  --surface-elevation-3: #1d2836;
+  --ink-gray-4: #646e7c;
+  --ink-gray-5: #96a0ad;
+  --ink-gray-6: #aab3bf;
+  --ink-gray-7: #c4ccd6;
+  --ink-gray-8: #dde2e8;
+  --ink-gray-9: #e9edf2;
+  --outline-gray-1: #252f3d;
+  --outline-gray-2: #2e3a4b;
+  --outline-gray-3: #3a485b;
+  --outline-gray-4: #536176;
+  --outline-elevation-1: #252f3d;
+  --outline-elevation-2: #2e3a4b;
+  --surface-gray-10: #e9edf2;
+}
+
+html,
+body {
+  @apply bg-paper text-ink antialiased;
+  transition: background-color 0.2s ease;
+  font-family: 'Figtree Variable', system-ui, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+body * {
+  font-family: inherit;
+}
+.font-display {
+  font-family: 'Newsreader Variable', Georgia, serif;
+  font-optical-sizing: auto;
+  letter-spacing: -0.015em;
+  font-weight: 450;
+}
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+.eyebrow {
+  @apply text-[11px] font-semibold uppercase text-ink-mute;
+  letter-spacing: 0.14em;
+}
+
+/* softer, rounder inputs everywhere (frappe-ui inputs, selects, textareas) */
+input.form-input,
+textarea.form-textarea,
+.form-input,
+.form-textarea,
+button[role='combobox'],
+[role='combobox'] input {
+  border-radius: 10px !important;
+}
+
+/* dialog titles in the display serif, like page titles */
+[role='dialog'] header h3 {
+  font-family: 'Newsreader Variable', Georgia, serif !important;
+  font-size: 24px !important;
+  font-weight: 450 !important;
+  letter-spacing: -0.015em;
+}
+
+.surface {
+  @apply rounded-[18px] border border-line bg-card shadow-card;
+}
+.field {
+  @apply h-12 w-full rounded-[12px] border border-line bg-card px-4 text-[15px] text-ink shadow-card outline-none transition placeholder:text-ink-faint focus:border-sky-mid focus:ring-4 focus:ring-sky-mid/15;
+}
+
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+:focus-visible {
+  outline: 2px solid rgb(var(--si-sky-mid));
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .rise {
+    animation: rise 0.45s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  }
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+  }
+  /* list rows come in one after the other */
+  .stagger > * {
+    animation: rise 0.4s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  }
+  .stagger > :nth-child(2) { animation-delay: 40ms; }
+  .stagger > :nth-child(3) { animation-delay: 80ms; }
+  .stagger > :nth-child(4) { animation-delay: 120ms; }
+  .stagger > :nth-child(5) { animation-delay: 160ms; }
+  .stagger > :nth-child(n + 6) { animation-delay: 200ms; }
+  .logo-roof {
+    stroke-dasharray: 1;
+    animation: draw 1s 0.1s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  }
+  @keyframes draw {
+    from {
+      stroke-dashoffset: 1;
+    }
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+  .logo-sun {
+    transform-origin: 352px 164px;
+    animation: sunrise 0.9s 0.25s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  }
+  @keyframes sunrise {
+    from {
+      opacity: 0;
+      transform: translateY(22px) scale(0.75);
+    }
+  }
+}
+
+@media print {
+  aside,
+  header,
+  nav,
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: white;
+  }
+}

@@ -4,5 +4,5 @@ __pycache__/
 node_modules/
 
 # Sky Immo frontend build output: produced by `bench build` (root package.json → frontend/).
-skyeng_immo/public/sky-immo/
-skyeng_immo/www/sky-immo/index.html
+skyeng_immo/public/frontend/
+skyeng_immo/www/sky-immo.html
