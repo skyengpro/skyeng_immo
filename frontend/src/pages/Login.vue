@@ -39,12 +39,12 @@
           <div class="mt-6 space-y-4 sm:mt-9 sm:space-y-5">
             <label class="block">
               <span class="mb-1.5 block text-[13px] font-semibold text-ink">{{ t('Email') }}</span>
-              <input v-model="email" type="email" autocomplete="username" inputmode="email" autocapitalize="none" required :placeholder="t('you@example.com')" class="field" />
+              <input v-model="email" :aria-label="t('Email')" type="email" autocomplete="username" inputmode="email" autocapitalize="none" required :placeholder="t('you@example.com')" class="field" />
             </label>
             <label class="block">
               <span class="mb-1.5 block text-[13px] font-semibold text-ink">{{ t('Password') }}</span>
               <span class="relative block">
-                <input v-model="password" :type="show ? 'text' : 'password'" autocomplete="current-password" required class="field pr-12" />
+                <input v-model="password" :aria-label="t('Password')" :type="show ? 'text' : 'password'" autocomplete="current-password" required class="field pr-12" />
                 <button type="button" class="absolute right-2 top-1/2 flex size-8 -translate-y-1/2 items-center justify-center rounded-full text-ink-mute hover:bg-paper hover:text-ink"
                   :aria-label="show ? t('Hide password') : t('Show password')" @click="show = !show">
                   <span :class="show ? 'lucide-eye-off' : 'lucide-eye'" class="size-4" />

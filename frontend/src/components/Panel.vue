@@ -7,7 +7,7 @@
       </div>
       <slot name="actions" />
     </header>
-    <div class="flex-1" :class="padded && 'px-5 pb-5'"><slot /></div>
+    <div class="flex-1" :class="padded && ['px-5 pb-5', !(title || $slots.actions) && 'pt-5']"><slot /></div>
   </section>
 </template>
 

@@ -1,11 +1,11 @@
 <template>
   <div>
-    <PageHeader :eyebrow="t('Invoice')" :title="id" :back="back" :back-label="isOwner ? t('The tenant') : t('Invoices')" />
+    <PageHeader :eyebrow="t('Invoice {0}', id)" :title="data ? t('Rent · {0}', period(data.periodStart, data.periodEnd)) : t('Invoice')" :back="back" :back-label="isOwner ? t('The tenant') : t('Invoices')" />
 
     <ErrorState v-if="error" :error="error" @retry="reload" />
     <Skeleton v-else-if="!data" :rows="2" tall />
     <div v-else class="grid grid-cols-[minmax(0,1fr)] gap-4 md:grid-cols-[minmax(0,1fr)_320px] md:items-start md:gap-5 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-6">
-      <aside class="space-y-4 md:order-1 md:sticky md:top-20 md:order-2">
+      <aside class="space-y-4 md:sticky md:top-20 md:order-2">
         <Panel padded>
           <StatusBadge kind="invoice" :status="data.status" />
           <p class="mt-4 text-[13px] text-ink-mute">{{ left ? t('Still to pay') : t('Amount') }}</p>
@@ -71,9 +71,10 @@ const back = computed(() =>
   isOwner ? (data.value?.leaseId ? `/proprietaire/baux/${encodeURIComponent(data.value.leaseId)}` : '/proprietaire/biens') : '/locataire/factures',
 )
 const facts = computed(() => [
+  { label: t('Number'), value: data.value.id },
   { label: t('Due date'), value: date(data.value.dueDate) },
   { label: t('Period'), value: period(data.value.periodStart, data.value.periodEnd) },
   ...(isOwner ? [{ label: t('Tenant'), value: data.value.tenant.name }] : []),
-  ...(data.value.property ? [{ label: t('Home'), value: data.value.property.displayName }] : []),
+  ...(data.value.property ? [{ label: t('Unit'), value: data.value.property.displayName }] : []),
 ])
 </script>

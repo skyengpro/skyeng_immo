@@ -20,6 +20,8 @@
           :aria-current="isActive(item, route.path) ? 'page' : undefined">
           <span :class="[item.icon, isActive(item, route.path) ? 'text-sky-mid' : 'text-ink-mute group-hover:text-ink-soft']" class="size-[18px] shrink-0" />
           <span v-if="!folded" class="flex-1">{{ t(item.label) }}</span>
+          <span v-if="badge(item) && !folded" class="rounded-full bg-warn px-1.5 py-px text-[11px] font-semibold text-white tabular">{{ badge(item) }}</span>
+          <span v-else-if="badge(item)" class="absolute right-3 top-2 size-2 rounded-full bg-warn ring-2 ring-card" />
         </RouterLink>
       </nav>
 
@@ -86,6 +88,7 @@
           <span :class="item.icon" class="size-[19px]" />
           <span class="w-full truncate text-center text-[10.5px] font-semibold">{{ t(item.short) }}</span>
           <span v-if="isActive(item, route.path)" class="absolute -bottom-0.5 h-[3px] w-4 rounded-full bg-sky-mid" />
+          <span v-if="badge(item)" class="absolute right-[24%] top-1 size-2 rounded-full bg-warn ring-2 ring-card" />
         </RouterLink>
       </div>
     </nav>
@@ -107,8 +110,11 @@ import { lang, setLanguage, t } from '@/i18n'
 import { isDark, setTheme } from '@/theme'
 import { session, logout, space, home } from '@/session'
 import { ownerNav, tenantNav, isActive } from '@/nav'
+import { loadAttention, awaitingCount } from '@/attention'
 
 const route = useRoute()
+loadAttention()
+const badge = (item) => (item.badge === 'awaiting' ? awaitingCount() : 0)
 const items = computed(() => (space() === 'tenant' ? tenantNav : ownerNav))
 const roleLabel = computed(() => ({ manager: 'Property manager', owner: 'Landlord', tenant: 'Tenant' })[session.user.role])
 const spaceLabel = computed(() => (space() === 'tenant' ? 'Tenant space' : 'Landlord space'))

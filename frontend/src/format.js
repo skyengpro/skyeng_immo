@@ -39,6 +39,7 @@ export function period(start, end) {
     const label = date(a, { month: 'long', year: 'numeric' })
     return label.charAt(0).toUpperCase() + label.slice(1)
   }
+  if (a.getTime() === b.getTime()) return date(start)
   return t('{0} to {1}', date(start), date(end))
 }
 

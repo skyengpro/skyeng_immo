@@ -1,6 +1,6 @@
 <template>
   <div>
-    <PageHeader :eyebrow="isOwner ? t('Tenant') : t('My lease')" :title="isOwner ? (data?.tenant.name || t('Tenant')) : (data?.property.displayName || t('My lease'))" :back="back" :back-label="backLabel" />
+    <PageHeader :eyebrow="isOwner ? t('Tenant') : [t('My lease'), building].filter(Boolean).join(' · ')" :title="isOwner ? (data?.tenant.name || t('Tenant')) : (data?.property.name || t('My lease'))" :back="back" :back-label="backLabel" />
 
     <ErrorState v-if="error" :error="error" @retry="reload" />
     <Skeleton v-else-if="!data" :rows="3" tall />
@@ -69,6 +69,11 @@ import { space } from '@/session'
 const props = defineProps({ id: String })
 const { data, error, reload } = useLoad('get_lease', () => ({ name: props.id }))
 const isOwner = space() === 'owner'
+// "Building · Unit": the building part, for the page eyebrow
+const building = computed(() => {
+  const d = data.value?.property
+  return d && d.displayName !== d.name ? d.displayName.replace(` · ${d.name}`, '') : ''
+})
 const totalDue = computed(() => (data.value?.invoicesDue || []).reduce((s, i) => s + i.outstanding, 0))
 const back = computed(() => (isOwner ? (data.value ? `/proprietaire/biens/${encodeURIComponent(data.value.property.id)}` : '/proprietaire/biens') : '/locataire'))
 const backLabel = computed(() => (isOwner ? data.value?.property.displayName || t('My properties') : t('Home')))

@@ -64,6 +64,7 @@ import { categoryLabel } from '@/issues'
 import { t } from '@/i18n'
 import { date } from '@/format'
 import { space } from '@/session'
+import { loadAttention } from '@/attention'
 
 const props = defineProps({ id: String })
 const base = space() === 'owner' ? '/proprietaire' : '/locataire'
@@ -81,7 +82,7 @@ const facts = computed(() => {
     { label: t('Request no.'), value: d.id },
     { label: t('Type of problem'), value: t(categoryLabel[d.category] || 'Something else') },
     ...(d.tenantName ? [{ label: t('Tenant'), value: d.tenantName }] : []),
-    ...(d.property ? [{ label: t('Home'), value: d.property.displayName }] : []),
+    ...(d.property ? [{ label: t('Unit'), value: d.property.displayName }] : []),
     ...(d.landlordName ? [{ label: t('Owner'), value: d.landlordName }] : []),
     { label: t('Sent on'), value: date(d.createdAt) },
   ]
@@ -93,6 +94,7 @@ async function decide(decision) {
     await post('decide_issue', { name: props.id, decision })
     toast.success(decision === 'approve' ? t('Request approved') : t('Request rejected'))
     await reload()
+    loadAttention()
   } catch (e) {
     toast.error(e.message)
   } finally {

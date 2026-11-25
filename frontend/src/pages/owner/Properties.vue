@@ -21,15 +21,29 @@
             </div>
           </div>
           <ul class="stagger surface divide-y divide-line overflow-hidden">
-            <Row v-for="u in group.units" :key="u.id" :to="`/proprietaire/biens/${encodeURIComponent(u.id)}`">
-              <p class="truncate text-[15px] font-semibold text-ink">{{ u.name }}</p>
-              <p class="truncate text-[13px]" :class="u.tenantName ? 'text-ink-soft' : 'text-ink-mute'">{{ u.tenantName || t('Vacant, no tenant') }}</p>
-              <p v-if="u.type" class="text-[12px] text-ink-mute">{{ u.type }}</p>
-              <template #end>
-                <span v-if="u.rent.amount > 0" class="whitespace-nowrap text-[14px] font-semibold text-ink tabular">{{ perPeriod(u.rent.amount, u.rent.frequency) }}</span>
-                <StatusBadge kind="property" :status="u.status" />
-              </template>
-            </Row>
+            <li class="hidden grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)_150px_130px_16px] gap-x-3 bg-paper/60 px-5 py-2.5 text-[11px] font-semibold uppercase tracking-[0.1em] text-ink-mute md:grid" aria-hidden="true">
+              <span>{{ t('Unit') }}</span><span>{{ t('Tenant') }}</span><span class="text-right">{{ t('Rent') }}</span><span class="text-right">{{ t('Status') }}</span><span />
+            </li>
+            <li v-for="u in group.units" :key="u.id">
+              <RouterLink :to="`/proprietaire/biens/${encodeURIComponent(u.id)}`"
+                class="group grid grid-cols-[minmax(0,1fr)_auto_16px] items-center gap-x-3 gap-y-0.5 px-4 py-3.5 transition hover:bg-paper md:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)_150px_130px_16px] md:px-5">
+                <div class="min-w-0">
+                  <p class="truncate text-[15px] font-semibold text-ink">{{ u.name }}</p>
+                  <p class="truncate text-[12.5px] text-ink-mute md:hidden">{{ u.tenantName || t('Vacant, no tenant') }}</p>
+                  <p v-if="u.type" class="hidden truncate text-[12.5px] text-ink-mute md:block">{{ u.type }}</p>
+                </div>
+                <div class="hidden min-w-0 items-center gap-2.5 md:flex">
+                  <Initials v-if="u.tenantName" :name="u.tenantName" size="sm" />
+                  <span class="truncate text-[13.5px]" :class="u.tenantName ? 'text-ink-soft' : 'text-ink-mute'">{{ u.tenantName || t('Vacant, no tenant') }}</span>
+                </div>
+                <div class="flex flex-col items-end gap-1.5 md:contents">
+                  <span v-if="u.rent.amount > 0" class="whitespace-nowrap text-right text-[14px] font-semibold text-ink tabular">{{ perPeriod(u.rent.amount, u.rent.frequency) }}</span>
+                  <span v-else class="hidden text-right text-ink-faint md:block">—</span>
+                  <span class="md:justify-self-end"><StatusBadge kind="property" :status="u.status" /></span>
+                </div>
+                <span class="lucide-chevron-right size-4 text-ink-faint transition group-hover:translate-x-0.5 group-hover:text-ink-soft" />
+              </RouterLink>
+            </li>
           </ul>
         </section>
       </div>
@@ -40,7 +54,7 @@
 <script setup>
 import { computed, ref } from 'vue'
 import PageHeader from '@/components/PageHeader.vue'
-import Row from '@/components/Row.vue'
+import Initials from '@/components/Initials.vue'
 import Btn from '@/components/Btn.vue'
 import Chips from '@/components/Chips.vue'
 import StatusBadge from '@/components/StatusBadge.vue'
