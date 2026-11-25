@@ -27,13 +27,8 @@
       <fieldset class="space-y-5">
         <legend class="mb-3 flex items-center gap-3 font-display text-[22px] text-ink"><span class="step">{{ data.homes.length > 1 ? 3 : 2 }}</span>{{ t('Describe it') }}</legend>
         <label class="block">
-          <span class="mb-1.5 block text-[13px] font-semibold text-ink">{{ t('In a few words') }}</span>
-          <input v-model="title" maxlength="120" class="field" :placeholder="t('Example: water leaking under the kitchen sink')" />
-          <span v-if="errors.title" class="mt-1 block text-[13px] font-semibold text-alert">{{ errors.title }}</span>
-        </label>
-        <label class="block">
-          <span class="mb-1.5 block text-[13px] font-semibold text-ink">{{ t('More details') }}</span>
-          <textarea v-model="description" rows="4" class="field h-auto py-3" :placeholder="t('Since when? Where exactly? Anything we should know?')" />
+          <span class="mb-1.5 block text-[13px] font-semibold text-ink">{{ t('What is the problem?') }}</span>
+          <textarea v-model="description" rows="5" class="field h-auto py-3" :placeholder="t('Example: water is leaking under the kitchen sink since yesterday. Where exactly? Anything we should know?')" />
           <span v-if="errors.description" class="mt-1 block text-[13px] font-semibold text-alert">{{ errors.description }}</span>
         </label>
         <label class="surface flex cursor-pointer items-start gap-3 p-4 has-[:checked]:border-alert/40 has-[:checked]:bg-alert-soft">
@@ -43,14 +38,20 @@
       </fieldset>
 
       <fieldset class="space-y-3">
-        <legend class="mb-3 flex items-center gap-3 font-display text-[22px] text-ink"><span class="step">{{ data.homes.length > 1 ? 4 : 3 }}</span>{{ t('Add a photo') }} <span class="text-[13px] font-normal text-ink-mute">({{ t('optional') }})</span></legend>
-        <input ref="file" type="file" accept="image/*" class="sr-only" tabindex="-1" :aria-label="t('Add a photo')" @change="onPhoto" />
-        <div v-if="photo" class="space-y-3">
-          <img :src="photo" :alt="t('Photo of the problem')" class="max-h-72 w-full rounded-[14px] border border-line object-cover" />
-          <div class="grid grid-cols-2 gap-2"><Btn icon="lucide-camera" :label="t('Change')" @click="file.click()" /><Btn icon="lucide-trash-2" :label="t('Remove')" @click="photo = null" /></div>
-        </div>
-        <button v-else type="button" class="flex min-h-28 w-full flex-col items-center justify-center gap-1 rounded-[18px] border-2 border-dashed border-line-strong bg-card/60 px-4 py-4 text-ink-mute transition hover:border-sky-mid hover:text-sky" @click="file.click()">
-          <span class="lucide-camera size-7" /><span class="text-[15px] font-semibold text-ink">{{ t('Take or choose a photo') }}</span><span class="text-[12.5px]">{{ t('It helps the repair go faster.') }}</span>
+        <legend class="mb-3 flex items-center gap-3 font-display text-[22px] text-ink"><span class="step">{{ data.homes.length > 1 ? 4 : 3 }}</span>{{ t('Add photos') }} <span class="text-[13px] font-normal text-ink-mute">({{ t('optional') }})</span></legend>
+        <input ref="file" type="file" accept="image/*" multiple class="sr-only" tabindex="-1" :aria-label="t('Add a photo')" @change="onPhotos" />
+        <ul v-if="photos.length" class="grid grid-cols-2 gap-3">
+          <li v-for="(p, i) in photos" :key="i" class="relative overflow-hidden rounded-[14px] border border-line">
+            <img :src="p" :alt="t('Photo {0}', i + 1)" class="aspect-[4/3] w-full object-cover" />
+            <button type="button" class="absolute right-2 top-2 flex size-8 items-center justify-center rounded-full bg-ink/80 text-on-ink backdrop-blur hover:bg-ink" :aria-label="t('Remove photo {0}', i + 1)" @click="photos.splice(i, 1)">
+              <span class="lucide-x size-4" />
+            </button>
+          </li>
+        </ul>
+        <button v-if="photos.length < MAX_PHOTOS" type="button" class="flex min-h-28 w-full flex-col items-center justify-center gap-1 rounded-[18px] border-2 border-dashed border-line-strong bg-card/60 px-4 py-4 text-ink-mute transition hover:border-sky-mid hover:text-sky" @click="file.click()">
+          <span class="lucide-camera size-7" />
+          <span class="text-[15px] font-semibold text-ink">{{ photos.length ? t('Add another photo') : t('Take or choose a photo') }}</span>
+          <span class="text-[12.5px]">{{ t('Up to {0} photos, images only, 5 MB each.', MAX_PHOTOS) }}</span>
         </button>
         <p v-if="errors.photo" class="text-[13px] font-semibold text-alert">{{ errors.photo }}</p>
       </fieldset>
@@ -83,10 +84,10 @@ const { data, error, reload } = useLoad('get_tenant_home')
 const file = ref(null)
 const property = ref(null)
 const category = ref(null)
-const title = ref('')
 const description = ref('')
 const urgent = ref(false)
-const photo = ref(null)
+const photos = ref([])
+const MAX_PHOTOS = 2
 const errors = ref({})
 const pending = ref(false)
 watch(data, (d) => d?.homes.length === 1 && (property.value = d.homes[0].property.id))
@@ -109,15 +110,24 @@ function downscale(f, max = 1600) {
     img.src = url
   })
 }
-async function onPhoto(e) {
-  const f = e.target.files?.[0]
+async function onPhotos(e) {
+  const files = [...(e.target.files || [])]
   e.target.value = ''
-  if (!f) return
-  try {
-    photo.value = await downscale(f)
-    errors.value = { ...errors.value, photo: '' }
-  } catch {
-    errors.value = { ...errors.value, photo: t('This photo could not be read. Try another one.') }
+  errors.value = { ...errors.value, photo: '' }
+  for (const f of files) {
+    if (photos.value.length >= MAX_PHOTOS) {
+      errors.value = { ...errors.value, photo: t('You can add up to {0} photos.', MAX_PHOTOS) }
+      break
+    }
+    if (!f.type.startsWith('image/')) {
+      errors.value = { ...errors.value, photo: t('"{0}" is not an image. Only photos are accepted.', f.name) }
+      continue
+    }
+    try {
+      photos.value.push(await downscale(f))
+    } catch {
+      errors.value = { ...errors.value, photo: t('This photo could not be read. Try another one.') }
+    }
   }
 }
 
@@ -125,13 +135,12 @@ async function submit() {
   errors.value = {
     property: property.value ? '' : t('Choose the home concerned.'),
     category: category.value ? '' : t('Choose what is wrong.'),
-    title: title.value.trim() ? '' : t('Say what is wrong in a few words.'),
     description: description.value.trim() ? '' : t('Describe the problem.'),
   }
   if (Object.values(errors.value).some(Boolean)) return toast.error(t('Please check the form.'))
   pending.value = true
   try {
-    const { id } = await post('create_issue', { category: category.value, title: title.value, description: description.value, urgent: urgent.value ? 1 : 0, property: property.value, photo: photo.value })
+    const { id } = await post('create_issue', { category: category.value, description: description.value, urgent: urgent.value ? 1 : 0, property: property.value, photos: photos.value })
     toast.success(t('Request sent'))
     router.replace(`/locataire/maintenance/${encodeURIComponent(id)}`)
   } catch (e) {

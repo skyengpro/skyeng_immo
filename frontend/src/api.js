@@ -103,5 +103,5 @@ export async function post(method, data = {}) {
 /** PDF of an invoice or a receipt (Payment Entry), from the ERPNext print format. */
 export const downloadUrl = (kind, name) => `${methodUrl('download')}?${new URLSearchParams({ kind, name })}`
 /** Photo of a repair request, served only to someone who can see that request. */
-export const photoUrl = (name) => `${methodUrl('issue_photo')}?${new URLSearchParams({ name })}`
+export const photoUrl = (name, file) => `${methodUrl('issue_photo')}?${new URLSearchParams(file ? { name, file } : { name })}`
 export const clearCache = () => cache.clear()

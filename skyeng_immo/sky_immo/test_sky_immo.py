@@ -370,36 +370,109 @@ class TestSkyImmo(IntegrationTestCase):
 		self.assertEqual(home["next"]["kind"], "schedule")
 		self.assertEqual(home["next"]["line"]["periodStart"], str(add_months(this_month, 1)))
 
-	def test_maintenance_request_with_photo(self):
+	def test_maintenance_request_with_photos(self):
 		self.as_user(self.user_t1)
 		created = api.create_issue(
 			category="plumbing",
-			title="Fuite",
 			description="Sous l'évier <script>x</script>",
 			urgent=1,
-			photo=PIXEL,
+			photos=[PIXEL, PIXEL],
 		)
 		issue = frappe.get_doc("Issue", created["id"])
 		self.assertEqual(issue.property_name, self.unit_a1)
+		# the customer is written directly (ERPNext clears it for Website Users)
 		self.assertEqual(issue.customer, self.tenant_1)
+		self.assertEqual(issue.raised_by, "mi-tenant-1@example.com")
+		self.assertEqual(issue.sky_immo_status, "Awaiting approval")
 		self.assertEqual(issue.issue_type, "Plomberie")
 		self.assertNotIn("<script>", issue.description)
 
+		files = frappe.get_all("File", filters={"attached_to_doctype": "Issue", "attached_to_name": issue.name}, fields=["is_private"])
+		self.assertEqual(len(files), 2)
+		self.assertTrue(all(f.is_private for f in files))
+
 		detail = api.get_issue(created["id"])
 		self.assertTrue(detail["urgent"])
-		self.assertTrue(detail["photo"].startswith("data:image/png;base64,"))
-		self.assertEqual(base64.b64decode(detail["photo"].split(",", 1)[1])[:4], b"\x89PNG")
+		self.assertEqual(len(detail["photos"]), 2)
+		self.assertEqual(detail["approval"], "awaiting_approval")
+		self.assertFalse(detail["canComplete"])
+		api.issue_photo(created["id"], detail["photos"][1]["id"])
+		self.assertEqual(frappe.local.response.filecontent[:4], b"\x89PNG")
 		self.assertEqual(api.get_tenant_home()["latestIssue"]["id"], created["id"])
 
+		# another tenant sees nothing, and the photos answer 403
 		self.as_user(self.user_t2)
 		with self.assertRaises(frappe.DoesNotExistError):
 			api.get_issue(created["id"])
+		with self.assertRaises(frappe.PermissionError):
+			api.issue_photo(created["id"])
 		self.assertFalse([i for i in api.list_issues() if i["id"] == created["id"]])
 
-	def test_issue_rejects_non_images(self):
+	def test_title_is_optional_description_is_not(self):
 		self.as_user(self.user_t1)
 		with self.assertRaises(frappe.ValidationError):
-			api.create_issue(category="other", title="x", description="y", photo="data:text/html;base64,PGI+")
+			api.create_issue(description="   ")
+		created = api.create_issue(description="La porte ne ferme plus\nDepuis lundi")
+		self.assertEqual(frappe.db.get_value("Issue", created["id"], "subject"), "La porte ne ferme plus")
+
+	def test_photos_are_limited_and_must_be_images(self):
+		self.as_user(self.user_t1)
+		with self.assertRaises(frappe.ValidationError) as caught:
+			api.create_issue(description="x", photos=[PIXEL, PIXEL, PIXEL])
+		self.assertIn("2", str(caught.exception))
+		with self.assertRaises(frappe.ValidationError) as caught:
+			api.create_issue(description="x", photos=["data:text/html;base64,PGI+"])
+		self.assertIn("not an image", str(caught.exception))
+		big = "data:image/png;base64," + base64.b64encode(b"\0" * (5 * 1024 * 1024 + 1)).decode()
+		with self.assertRaises(frappe.ValidationError) as caught:
+			api.create_issue(description="x", photos=[big])
+		self.assertIn("5 MB", str(caught.exception))
+		# nothing was written by the refused requests
+		self.assertFalse(frappe.db.exists("Issue", {"raised_by": "mi-tenant-1@example.com", "subject": "x"}))
+
+	def test_request_only_on_a_unit_of_an_active_lease(self):
+		self.as_user(self.user_t1)
+		with self.assertRaises(frappe.PermissionError):
+			api.create_issue(description="x", property=self.unit_b1)
+		with self.assertRaises(frappe.PermissionError):
+			api.create_issue(description="x", property=self.unit_a2)
+
+	def test_tenant_closes_a_request_only_when_in_progress(self):
+		from skyeng_immo.sky_immo import maintenance
+
+		self.as_user(self.user_t1)
+		name = api.create_issue(description="Fuite")["id"]
+		# still awaiting approval: cannot be completed
+		with self.assertRaises(frappe.ValidationError):
+			api.complete_issue(name)
+
+		# the owner approves it
+		self.as_user(self.user_a)
+		api.decide_issue(name, "approve")
+
+		# another tenant cannot close it
+		self.as_user(self.user_t2)
+		with self.assertRaises(frappe.PermissionError):
+			api.complete_issue(name)
+		# neither can the landlord
+		self.as_user(self.user_a)
+		with self.assertRaises(frappe.PermissionError):
+			api.complete_issue(name)
+
+		self.as_user(self.user_t1)
+		self.assertTrue(api.get_issue(name)["canComplete"])
+		self.assertEqual(api.complete_issue(name)["approval"], "completed")
+		self.assertEqual(frappe.db.get_value("Issue", name, ["sky_immo_status", "status"]), ("Completed", "Resolved"))
+		# once completed, it cannot be completed again
+		with self.assertRaises(frappe.ValidationError):
+			api.complete_issue(name)
+		self.assertFalse(maintenance.can_complete(name, self.user_t1))
+
+	def test_next_due_is_the_oldest_unpaid_invoice(self):
+		self.as_user(self.user_t1)
+		home = api.get_tenant_home()
+		self.assertEqual(home["next"]["kind"], "invoice")
+		self.assertEqual(home["next"]["invoice"]["id"], self.inv_late)
 
 	# ------------------------------------------------------- desk-side rules
 

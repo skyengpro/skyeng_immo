@@ -8,6 +8,7 @@ the tenant's maintenance request, plus their own language preference.
 
 import base64
 import binascii
+import json
 import html
 import re
 
@@ -29,7 +30,8 @@ from . import data, maintenance
 from .access import Scope, app_role, get_scope, not_found
 
 LANGUAGES = ("fr", "en")
-MAX_PHOTO_BYTES = 6 * 1024 * 1024
+MAX_PHOTOS = 2
+MAX_PHOTO_BYTES = 5 * 1024 * 1024
 MAX_ISSUES_PER_HOUR = 10
 PHOTO_TYPES = {"image/jpeg": "jpg", "image/png": "png", "image/webp": "webp"}
 
@@ -439,8 +441,8 @@ def get_tenant_home() -> dict:
 
 	next_due = None
 	if unpaid:
-		overdue = [invoice for invoice in unpaid if invoice["status"] == "overdue"]
-		next_due = {"kind": "invoice", "invoice": (overdue or unpaid)[0]}
+		# `unpaid` is sorted by due date: the first one is the oldest unpaid invoice.
+		next_due = {"kind": "invoice", "invoice": unpaid[0]}
 	else:
 		# Nothing to pay: the next period not invoiced yet, read against the real invoices.
 		items = data.lease_items([lease.name for lease in current])
@@ -536,8 +538,10 @@ def get_issue(name: str) -> dict:
 		**data.issue_summary(row, {}),
 		"description": html.unescape(strip_html(row.description or "")).strip(),
 		"resolution": html.unescape(strip_html(row.resolution_details or "")).strip() or None,
+		"photos": _issue_photos(name),
 		"hasPhoto": bool(row.attachment),
 		"canDecide": can_decide,
+		"canComplete": scope.role == "tenant" and maintenance.can_complete(name, scope.user),
 		"landlordName": frappe.db.get_value("Customer", owner, "customer_name") if owner and scope.role != "tenant" else None,
 		"replies": [
 			{
@@ -550,48 +554,47 @@ def get_issue(name: str) -> dict:
 	}
 
 
+def _issue_photos(name: str) -> list[dict]:
+	"""Private files attached to a request, oldest first: the app opens them through `issue_photo`."""
+	return [
+		{"id": f.name, "name": f.file_name}
+		for f in frappe.get_all(
+			"File",
+			filters={"attached_to_doctype": "Issue", "attached_to_name": name, "is_private": 1},
+			fields=["name", "file_name"],
+			order_by="creation asc",
+			ignore_permissions=True,
+		)
+	]
+
+
 @frappe.whitelist(methods=["GET"])
-def issue_photo(name: str):
-	"""Photo of a request, only for a user who can see that request (403 otherwise).
+def issue_photo(name: str, file: str | None = None):
+	"""A photo of a request, only for a user who can see that request (403 otherwise).
 
 	Frappe serves a private file to users who can read the Issue; landlords and tenants cannot,
 	so this method checks the scope, then returns the file.
 	"""
 	scope = get_scope()
 	filters, or_filters = _issue_scope(scope)
-	rows = frappe.get_all(
-		"Issue",
-		filters={**filters, "name": name},
-		or_filters=or_filters,
-		fields=["name", "attachment"],
-		limit=1,
-		ignore_permissions=True,
+	visible = frappe.get_all(
+		"Issue", filters={**filters, "name": name}, or_filters=or_filters, pluck="name", limit=1, ignore_permissions=True
 	)
-	if not rows:
+	if not visible:
 		frappe.throw(_("You do not have access to this photo."), frappe.PermissionError)
-	file_url = rows[0].attachment
-	names = (
-		frappe.get_all(
-			"File",
-			filters={"attached_to_doctype": "Issue", "attached_to_name": name, "file_url": file_url},
-			pluck="name",
-			limit=1,
-			ignore_permissions=True,
-		)
-		if file_url
-		else []
-	)
-	if not names:
+	photos = _issue_photos(name)
+	chosen = next((p for p in photos if p["id"] == file), None) if file else (photos[0] if photos else None)
+	if not chosen:
 		frappe.throw(_("Not found"), frappe.DoesNotExistError)
-	file = frappe.get_doc("File", names[0])
+	doc = frappe.get_doc("File", chosen["id"])
 	try:
-		content = file.get_content()
+		content = doc.get_content()
 	except (OSError, frappe.DoesNotExistError):
 		frappe.throw(_("Not found"), frappe.DoesNotExistError)
 	if isinstance(content, str):
 		content = content.encode()
-	extension = (file.file_name or "").rsplit(".", 1)[-1].lower()
-	frappe.local.response.filename = file.file_name or f"{name}.jpg"
+	extension = (doc.file_name or "").rsplit(".", 1)[-1].lower()
+	frappe.local.response.filename = doc.file_name or f"{name}.jpg"
 	frappe.local.response.filecontent = content
 	frappe.local.response.type = "download"
 	frappe.local.response.display_content_as = "inline"
@@ -605,29 +608,66 @@ def decide_issue(name: str, decision: str) -> dict:
 	return maintenance.decide(name, decision)
 
 
-def _decode_photo(photo: str) -> tuple[bytes, str]:
-	match = re.match(r"^data:(image/[a-z+]+);base64,(.+)$", photo or "", re.DOTALL)
+@frappe.whitelist(methods=["POST"])
+def complete_issue(name: str) -> dict:
+	"""The tenant who made a request closes it, once the work is done."""
+	get_scope(("tenant",))
+	return maintenance.complete(name)
+
+
+def _decode_photo(photo: str, position: int = 1) -> tuple[bytes, str]:
+	"""One photo sent as a data URL. Images only, 5 MB at most, with a message the tenant can act on."""
+	match = re.match(r"^data:(image/[a-z+.-]+);base64,(.+)$", photo or "", re.DOTALL)
 	if not match or match.group(1) not in PHOTO_TYPES:
-		frappe.throw(_("The photo must be a JPEG, PNG or WebP image."))
+		frappe.throw(
+			_("Photo {0} is not an image. Only JPEG, PNG or WebP photos are accepted.").format(position),
+			title=_("Photo refused"),
+		)
 	try:
 		content = base64.b64decode(match.group(2), validate=True)
 	except (binascii.Error, ValueError):
-		frappe.throw(_("The photo could not be read."))
+		frappe.throw(_("Photo {0} could not be read. Please choose another one.").format(position), title=_("Photo refused"))
 	if len(content) > MAX_PHOTO_BYTES:
-		frappe.throw(_("The photo is too large."))
+		frappe.throw(
+			_("Photo {0} is larger than {1} MB. Please choose a smaller one.").format(position, MAX_PHOTO_BYTES // (1024 * 1024)),
+			title=_("Photo refused"),
+		)
 	return content, PHOTO_TYPES[match.group(1)]
+
+
+def _photo_list(photos, photo) -> list[str]:
+	"""The photos of a request as a list of data URLs; `photo` is the single-photo form of older clients."""
+	if isinstance(photos, str):
+		try:
+			photos = json.loads(photos) if photos.strip() else []
+		except ValueError:
+			photos = [photos]
+	items = [p for p in (photos or []) if p]
+	if photo:
+		items.append(photo)
+	if len(items) > MAX_PHOTOS:
+		frappe.throw(_("You can add up to {0} photos.").format(MAX_PHOTOS), title=_("Too many photos"))
+	return items
 
 
 @frappe.whitelist(methods=["POST"])
 def create_issue(
-	category: str,
-	title: str,
 	description: str,
+	category: str = "other",
+	title: str | None = None,
 	property: str | None = None,
 	urgent: bool | int | str = False,
+	photos: list | str | None = None,
 	photo: str | None = None,
 ) -> dict:
-	"""A tenant reports a problem in their home. It lands in the desk as an Issue."""
+	"""A tenant reports a problem in a home they rent. It lands in the desk as an Issue, awaiting approval.
+
+	Only a unit of one of the tenant's active leases is accepted. The description is required;
+	up to two photos (images, 5 MB each) are optional. The Issue is inserted with ignore_permissions,
+	its customer is then set to the lease's customer with a direct write (ERPNext clears it for
+	Website Users), and the photos are saved as private files attached to it (the standard
+	`upload_file` needs write permission on the Issue).
+	"""
 	scope = get_scope(("tenant",))
 	# Per account, not per IP: tenants on one mobile network share addresses.
 	recent = frappe.db.count(
@@ -635,10 +675,10 @@ def create_issue(
 	)
 	if recent >= MAX_ISSUES_PER_HOUR:
 		frappe.throw(_("Too many requests in one hour. Please call your property manager."))
-	title = (title or "").strip()
 	description = (description or "").strip()
-	if not title or not description:
-		frappe.throw(_("Please describe the problem."))
+	if not description:
+		frappe.throw(_("Please describe the problem."), title=_("Description missing"))
+	title = (title or "").strip() or (description.splitlines()[0])[:80]
 	if category not in data.ISSUE_CATEGORIES:
 		category = "other"
 
@@ -646,15 +686,23 @@ def create_issue(
 	leases = [lease for lease in data.get_leases(scope.leases()) if data.is_current(lease, on)]
 	if property:
 		lease = next((lease for lease in leases if lease.property == property), None)
+		if lease is None:
+			frappe.throw(
+				_("You can only report a problem on a home you currently rent."),
+				frappe.PermissionError,
+			)
 	else:
 		lease = leases[0] if len(leases) == 1 else None
-	if lease is None:
-		frappe.throw(_("Please choose the home concerned."))
+		if lease is None:
+			frappe.throw(_("Please choose the home concerned."))
 
-	photo_content = _decode_photo(photo) if photo else None
+	# Every photo is checked before anything is written.
+	decoded = [_decode_photo(p, i) for i, p in enumerate(_photo_list(photos, photo), start=1)]
+
 	issue_type = data.ISSUE_CATEGORIES[category]
 	urgent = str(urgent).lower() in ("1", "true")
 	priority = "High" if urgent else "Medium"
+	email = frappe.db.get_value("User", scope.user, "email") or scope.user
 
 	issue = frappe.get_doc(
 		{
@@ -662,26 +710,26 @@ def create_issue(
 			"subject": title[:140],
 			# Tenant text is escaped: staff read it as HTML in the desk.
 			"description": escape_html(description).replace("\n", "<br>"),
-			"raised_by": scope.user,
-			"customer": lease.customer,
+			"raised_by": email,
 			"property_name": lease.property,
 			"company": lease.company,
 			"issue_type": issue_type if frappe.db.exists("Issue Type", issue_type) else None,
 			"priority": priority if frappe.db.exists("Issue Priority", priority) else None,
 			"via_customer_portal": 1,
-			"sky_immo_status": "Awaiting approval",
+			"sky_immo_status": maintenance.AWAITING,
 		}
 	)
 	# PropMS makes "person in charge" mandatory; staff set it when they take the request.
 	issue.flags.ignore_mandatory = True
 	issue.insert(ignore_permissions=True)
+	# ERPNext clears Issue.customer for Website Users on save: write it directly.
+	frappe.db.set_value("Issue", issue.name, "customer", lease.lease_customer or lease.customer)
 
-	if photo_content:
-		content, extension = photo_content
+	for position, (content, extension) in enumerate(decoded, start=1):
 		file = frappe.get_doc(
 			{
 				"doctype": "File",
-				"file_name": f"{issue.name}-photo.{extension}",
+				"file_name": f"{issue.name}-photo-{position}.{extension}",
 				"attached_to_doctype": "Issue",
 				"attached_to_name": issue.name,
 				"is_private": 1,
@@ -689,6 +737,7 @@ def create_issue(
 			}
 		)
 		file.insert(ignore_permissions=True)
-		issue.db_set("attachment", file.file_url, update_modified=False)
+		if position == 1:
+			issue.db_set("attachment", file.file_url, update_modified=False)
 
 	return {"id": issue.name}

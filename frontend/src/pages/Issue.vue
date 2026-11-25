@@ -13,6 +13,10 @@
             <Btn size="lg" block icon="lucide-x" :loading="busy === 'reject'" :disabled="!!busy" :label="t('Reject')" @click="decide('reject')" />
           </div>
         </Panel>
+        <Panel v-if="data.canComplete" :title="t('Is the work done?')" padded class="!border-ok/25 !bg-ok-soft/40">
+          <p class="mb-4 text-[13.5px] text-ink-soft">{{ t('Once the problem is fixed, close the request. Your property manager sees it as resolved.') }}</p>
+          <Btn variant="brand" size="lg" block icon="lucide-check-check" :loading="busy === 'complete'" :disabled="!!busy" :label="t('Mark as completed')" @click="complete" />
+        </Panel>
         <Panel padded>
           <div class="flex flex-wrap gap-2">
             <StatusBadge kind="approval" :status="data.approval" />
@@ -26,7 +30,13 @@
       <div class="min-w-0 space-y-4 md:order-1">
         <Panel :title="t('What was reported')" padded>
           <p class="whitespace-pre-line text-[14.5px] leading-relaxed text-ink-soft">{{ data.description }}</p>
-          <img v-if="data.hasPhoto" :src="photoUrl(data.id)" :alt="t('Photo of the problem')" loading="lazy" class="mt-4 max-h-96 w-full rounded-[14px] border border-line object-cover" />
+          <ul v-if="data.photos?.length" class="mt-4 grid gap-3" :class="data.photos.length > 1 && 'sm:grid-cols-2'">
+            <li v-for="(p, i) in data.photos" :key="p.id">
+              <a :href="photoUrl(data.id, p.id)" target="_blank" rel="noopener">
+                <img :src="photoUrl(data.id, p.id)" :alt="t('Photo {0}', i + 1)" loading="lazy" class="max-h-80 w-full rounded-[14px] border border-line object-cover" />
+              </a>
+            </li>
+          </ul>
         </Panel>
         <Panel v-if="data.resolution" :title="t('What was done')" padded>
           <p class="whitespace-pre-line text-[14.5px] leading-relaxed text-ink-soft">{{ data.resolution }}</p>
@@ -87,6 +97,19 @@ const facts = computed(() => {
     { label: t('Sent on'), value: date(d.createdAt) },
   ]
 })
+
+async function complete() {
+  busy.value = 'complete'
+  try {
+    await post('complete_issue', { name: props.id })
+    toast.success(t('Request closed. Thank you.'))
+    await reload()
+  } catch (e) {
+    toast.error(e.message)
+  } finally {
+    busy.value = ''
+  }
+}
 
 async function decide(decision) {
   busy.value = decision

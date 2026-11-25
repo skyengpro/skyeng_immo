@@ -115,3 +115,32 @@ def on_issue_update(doc, method=None):
 		return
 	if doc.status in ("Resolved", "Closed") and current != COMPLETED:
 		frappe.db.set_value("Issue", doc.name, "sky_immo_status", COMPLETED, update_modified=False)
+
+
+def can_complete(issue_name: str, user: str | None = None) -> bool:
+	"""The tenant who made the request, while the owner's approval has it In progress."""
+	user = user or frappe.session.user
+	row = frappe.db.get_value("Issue", issue_name, ["raised_by", "sky_immo_status"], as_dict=True)
+	if not row or row.sky_immo_status != IN_PROGRESS:
+		return False
+	return bool(row.raised_by) and row.raised_by.lower() == (frappe.db.get_value("User", user, "email") or user).lower()
+
+
+@frappe.whitelist(methods=["POST"])
+def complete(name: str) -> dict:
+	"""The tenant marks their request as completed. It then shows as Resolved in the desk."""
+	row = frappe.db.get_value("Issue", name, ["raised_by", "sky_immo_status"], as_dict=True)
+	if not row:
+		frappe.throw(_("Not found"), frappe.DoesNotExistError)
+	user_email = (frappe.db.get_value("User", frappe.session.user, "email") or frappe.session.user).lower()
+	if (row.raised_by or "").lower() != user_email:
+		frappe.throw(_("Only the tenant who made this request can mark it as completed."), frappe.PermissionError)
+	if row.sky_immo_status != IN_PROGRESS:
+		frappe.throw(
+			_("A request can be marked as completed only while it is in progress."), title=_("Not in progress")
+		)
+	set_status(name, COMPLETED)
+	frappe.get_doc("Issue", name).add_comment(
+		"Info", _("Marked as completed by {0} in Sky Immo.").format(frappe.utils.get_fullname(frappe.session.user))
+	)
+	return {"id": name, "approval": APP_STATUS[COMPLETED]}

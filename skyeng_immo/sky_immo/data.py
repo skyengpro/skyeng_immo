@@ -158,6 +158,7 @@ LEASE_FIELDS = [
 	"name",
 	"property",
 	"customer",
+	"lease_customer",
 	"start_date",
 	"end_date",
 	"frequency",
