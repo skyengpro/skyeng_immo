@@ -19,6 +19,7 @@ Refuses to run unless the site is in developer mode.
 """
 
 import frappe
+from frappe import _
 from frappe.utils import add_days, add_months, get_first_day, get_last_day, getdate, today
 from frappe.utils.password import update_password
 
@@ -39,7 +40,7 @@ MANAGER = "gestionnaire.demo@example.com"
 
 def _guard():
 	if not frappe.conf.developer_mode:
-		frappe.throw("Demo data is only for development sites (developer_mode).")
+		frappe.throw(_("Demo data is only for development sites (developer_mode)."))
 
 
 def _leaf(doctype):
@@ -337,7 +338,7 @@ def create_demo_data():
 		)
 		issue.db_set("status", in_progress)
 
-	frappe.db.commit()
+	# No commit here: `bench execute` (the documented way to run this) commits once it returns.
 	print("Sky Immo demo data ready. Password for every account:", PASSWORD)
 
 
@@ -392,5 +393,4 @@ def delete_demo_data():
 	for code in ("DEMO Loyer", "DEMO Charges"):
 		if frappe.db.exists("Item", code):
 			frappe.delete_doc("Item", code, force=True, ignore_permissions=True)
-	frappe.db.commit()
 	print("Sky Immo demo data removed.")

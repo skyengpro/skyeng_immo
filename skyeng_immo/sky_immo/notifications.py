@@ -82,22 +82,26 @@ def template_name(key: str, lang: str) -> str:
 	return f"Sky Immo - {key} ({lang})"
 
 
+def built_in_template(key: str, lang: str):
+	"""The app's own wording of an email, as an (unsaved) Email Template."""
+	subject, body = TEMPLATES[key][lang]
+	return frappe.get_doc(
+		{
+			"doctype": "Email Template",
+			"name": template_name(key, lang),
+			"subject": subject,
+			"use_html": 1,
+			"response_html": body,
+		}
+	)
+
+
 def ensure_email_templates():
 	"""Create missing templates. Existing ones are left alone: staff may have edited them."""
 	for key, languages in TEMPLATES.items():
-		for lang, (subject, body) in languages.items():
-			name = template_name(key, lang)
-			if frappe.db.exists("Email Template", name):
-				continue
-			frappe.get_doc(
-				{
-					"doctype": "Email Template",
-					"name": name,
-					"subject": subject,
-					"use_html": 1,
-					"response_html": body,
-				}
-			).insert(ignore_permissions=True)
+		for lang in languages:
+			if not frappe.db.exists("Email Template", template_name(key, lang)):
+				built_in_template(key, lang).insert(ignore_permissions=True)
 
 
 # --------------------------------------------------------------------------- #
@@ -194,13 +198,18 @@ def landlord_recipients(property_name: str | None) -> list[frappe._dict]:
 
 
 def _render(key: str, lang: str, context: dict) -> tuple[str, str]:
+	"""Subject and body of the email, rendered by Frappe's Email Template in its sandboxed Jinja.
+
+	The template staff edited in the desk (checked by Email Template.validate on save), else the
+	app's own wording.
+	"""
 	name = template_name(key, lang)
-	if frappe.db.exists("Email Template", name):
-		template = frappe.get_doc("Email Template", name)
-		subject, body = template.subject, template.response_html if template.use_html else template.response
-	else:
-		subject, body = TEMPLATES[key][lang]
-	return frappe.render_template(subject, context), frappe.render_template(body, context)
+	template = (
+		frappe.get_doc("Email Template", name)
+		if frappe.db.exists("Email Template", name)
+		else built_in_template(key, lang)
+	)
+	return template.get_formatted_subject(context), template.get_formatted_response(context)
 
 
 def send(key: str, recipients: list, context: dict, reference: tuple[str, str], attach=None):
