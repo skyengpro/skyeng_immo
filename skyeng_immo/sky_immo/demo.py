@@ -344,13 +344,23 @@ def create_demo_data():
 def delete_demo_data():
 	_guard()
 	frappe.flags.mute_emails = True
+	# Each lookup runs only on names found: Frappe reads `x in []` (or `in [""]`) as "x not set",
+	# which would select every invoice without a lease and every request without a customer.
 	customers = frappe.get_all("Customer", filters={"name": ["like", f"{PREFIX} %"]}, pluck="name")
-	leases = frappe.get_all("Lease", filters={"customer": ["in", customers or [""]]}, pluck="name")
-	invoices = frappe.get_all("Sales Invoice", filters={"lease": ["in", leases or [""]]}, pluck="name")
-	payments = frappe.get_all(
-		"Payment Entry Reference",
-		filters={"reference_doctype": "Sales Invoice", "reference_name": ["in", invoices or [""]]},
-		pluck="parent",
+	leases = (
+		frappe.get_all("Lease", filters={"customer": ["in", customers]}, pluck="name") if customers else []
+	)
+	invoices = (
+		frappe.get_all("Sales Invoice", filters={"lease": ["in", leases]}, pluck="name") if leases else []
+	)
+	payments = (
+		frappe.get_all(
+			"Payment Entry Reference",
+			filters={"reference_doctype": "Sales Invoice", "reference_name": ["in", invoices]},
+			pluck="parent",
+		)
+		if invoices
+		else []
 	)
 	for name in set(payments):
 		doc = frappe.get_doc("Payment Entry", name)
@@ -362,7 +372,10 @@ def delete_demo_data():
 		if doc.docstatus == 1:
 			doc.cancel()
 		frappe.delete_doc("Sales Invoice", name, force=True, ignore_permissions=True)
-	for name in frappe.get_all("Issue", filters={"customer": ["in", customers or [""]]}, pluck="name"):
+	issues = (
+		frappe.get_all("Issue", filters={"customer": ["in", customers]}, pluck="name") if customers else []
+	)
+	for name in issues:
 		frappe.delete_doc("Issue", name, force=True, ignore_permissions=True)
 	for name in leases:
 		frappe.delete_doc("Lease", name, force=True, ignore_permissions=True)

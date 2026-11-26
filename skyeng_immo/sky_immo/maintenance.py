@@ -12,6 +12,8 @@ on the property, or on its nearest parent that has one.
 import frappe
 from frappe import _
 
+from skyeng_immo.access import get_customers
+
 AWAITING = "Awaiting approval"
 IN_PROGRESS = "In progress"
 REJECTED = "Rejected"
@@ -47,14 +49,10 @@ def effective_owner(property_name: str | None) -> str | None:
 
 
 def is_linked_to(user: str, customer: str | None) -> bool:
+	"""The user is a portal user of `customer`, and that Customer is enabled."""
 	if not customer or not user or user == "Guest":
 		return False
-	return bool(
-		frappe.db.exists(
-			"Portal User",
-			{"parenttype": "Customer", "parentfield": "portal_users", "parent": customer, "user": user},
-		)
-	)
+	return customer in get_customers(user)
 
 
 def can_decide(issue_name: str, user: str | None = None) -> bool:
@@ -123,7 +121,10 @@ def can_complete(issue_name: str, user: str | None = None) -> bool:
 	row = frappe.db.get_value("Issue", issue_name, ["raised_by", "sky_immo_status"], as_dict=True)
 	if not row or row.sky_immo_status != IN_PROGRESS:
 		return False
-	return bool(row.raised_by) and row.raised_by.lower() == (frappe.db.get_value("User", user, "email") or user).lower()
+	return (
+		bool(row.raised_by)
+		and row.raised_by.lower() == (frappe.db.get_value("User", user, "email") or user).lower()
+	)
 
 
 @frappe.whitelist(methods=["POST"])
@@ -134,13 +135,17 @@ def complete(name: str) -> dict:
 		frappe.throw(_("Not found"), frappe.DoesNotExistError)
 	user_email = (frappe.db.get_value("User", frappe.session.user, "email") or frappe.session.user).lower()
 	if (row.raised_by or "").lower() != user_email:
-		frappe.throw(_("Only the tenant who made this request can mark it as completed."), frappe.PermissionError)
+		frappe.throw(
+			_("Only the tenant who made this request can mark it as completed."), frappe.PermissionError
+		)
 	if row.sky_immo_status != IN_PROGRESS:
 		frappe.throw(
-			_("A request can be marked as completed only while it is in progress."), title=_("Not in progress")
+			_("A request can be marked as completed only while it is in progress."),
+			title=_("Not in progress"),
 		)
 	set_status(name, COMPLETED)
 	frappe.get_doc("Issue", name).add_comment(
-		"Info", _("Marked as completed by {0} in Sky Immo.").format(frappe.utils.get_fullname(frappe.session.user))
+		"Info",
+		_("Marked as completed by {0} in Sky Immo.").format(frappe.utils.get_fullname(frappe.session.user)),
 	)
 	return {"id": name, "approval": APP_STATUS[COMPLETED]}

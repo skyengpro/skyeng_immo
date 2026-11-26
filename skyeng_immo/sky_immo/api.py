@@ -1,15 +1,15 @@
-"""Endpoints of the Sky Immo app, called from the React frontend.
+"""Endpoints of the Sky Immo app, called from the Vue frontend.
 
-Each one reads the signed-in user's scope first (:mod:`.access`) and only
-ever returns records inside it. Landlords and tenants have no other access
+Each one reads the signed-in user's scope first (:func:`skyeng_immo.access.get_scope`, the one
+computation of what a user may see) and only ever returns records inside it. Landlords and tenants have no other access
 to PropMS or ERPNext data. The only write a landlord or tenant can make is
 the tenant's maintenance request, plus their own language preference.
 """
 
 import base64
 import binascii
-import json
 import html
+import json
 import re
 
 import frappe
@@ -26,14 +26,55 @@ from frappe.utils import (
 	today,
 )
 
+from skyeng_immo import access
+from skyeng_immo.access import Scope
+
 from . import data, maintenance
-from .access import Scope, app_role, get_scope, not_found
 
 LANGUAGES = ("fr", "en")
 MAX_PHOTOS = 2
 MAX_PHOTO_BYTES = 5 * 1024 * 1024
 MAX_ISSUES_PER_HOUR = 10
 PHOTO_TYPES = {"image/jpeg": "jpg", "image/png": "png", "image/webp": "webp"}
+
+
+def _scope(side: str | None = None) -> Scope:
+	"""Scope of the signed-in user; 403 without an app role, or without the role `side` needs.
+
+	`side` "owner" (Landlord or manager) narrows the scope to the properties the user owns or
+	manages, "tenant" (Tenant) to the user's own leases. None keeps every role the user holds.
+	"""
+	user = frappe.session.user
+	roles = frappe.get_roles(user)
+	allowed = access.app_space(user) is not None and (
+		side is None
+		or (side == "owner" and (access.is_manager(user) or access.LANDLORD in roles))
+		or (side == "tenant" and access.TENANT in roles)
+	)
+	if not allowed:
+		frappe.throw(_("You do not have access to this page."), frappe.PermissionError)
+	scope = access.get_scope(user)
+	if side == "owner":
+		return access.owner_side(scope)
+	if side == "tenant":
+		return access.tenant_side(scope)
+	return scope
+
+
+def _not_found():
+	"""Same answer for 'does not exist' and 'not yours', so names cannot be probed."""
+	frappe.throw(_("Not found"), frappe.DoesNotExistError)
+
+
+def _invoice_filters(scope: Scope) -> dict:
+	"""Rent invoices of the scope (credit notes are not listed)."""
+	return {**access.invoice_filters(scope), "is_return": 0}
+
+
+def _can_see_invoice(scope: Scope, name: str) -> bool:
+	return bool(name and scope.leases) and bool(
+		frappe.db.exists("Sales Invoice", {**_invoice_filters(scope), "name": name})
+	)
 
 
 def _default_currency() -> str:
@@ -56,7 +97,7 @@ def get_session() -> dict:
 		return result
 
 	result["csrfToken"] = frappe.sessions.get_csrf_token()
-	role = app_role(user)
+	role = access.app_space(user)
 	if role is None:
 		# Signed in, but neither staff, landlord nor tenant (e.g. a supplier portal user).
 		result["noAccess"] = True
@@ -80,7 +121,7 @@ def set_language(lang: str) -> None:
 	"""Saved on the User so that emails also go out in this language."""
 	if lang not in LANGUAGES:
 		frappe.throw(_("Unsupported language"))
-	get_scope()
+	_scope()
 	frappe.db.set_value("User", frappe.session.user, "language", lang)
 	frappe.clear_cache(user=frappe.session.user)
 
@@ -92,27 +133,25 @@ def set_language(lang: str) -> None:
 
 def _context(scope: Scope):
 	"""Properties and leases of the scope, loaded once per request."""
-	props = data.get_properties(scope.properties())
-	leases = data.get_leases(scope.leases())
+	props = data.get_properties(scope.properties)
+	leases = data.get_leases(scope.leases)
 	lease_property = {lease.name: lease.property for lease in leases}
 	return props, leases, lease_property
 
 
 @frappe.whitelist(methods=["GET"])
 def get_owner_dashboard() -> dict:
-	scope = get_scope(("manager", "owner"))
+	scope = _scope("owner")
 	on = getdate(today())
 	props, leases, lease_property = _context(scope)
 	current = [lease for lease in leases if data.is_current(lease, on)]
 
 	unpaid = data.invoice_summaries(
-		{**scope.invoice_filters(), "outstanding_amount": [">", 0]}, lease_property, props, on
+		{**_invoice_filters(scope), "outstanding_amount": [">", 0]}, lease_property, props, on
 	)
 	overdue = sorted((inv for inv in unpaid if inv["status"] == "overdue"), key=lambda inv: -inv["daysLate"])
 
-	invoice_names = frappe.get_all(
-		"Sales Invoice", filters=scope.invoice_filters(), pluck="name", ignore_permissions=True
-	)
+	invoice_names = frappe.get_all("Sales Invoice", filters=_invoice_filters(scope), pluck="name")
 	collected = sum(
 		payment["amount"] for payment in data.payments_for(invoice_names, since=get_first_day(on))
 	)
@@ -159,7 +198,7 @@ def _property_summary(prop, current_lease, items, tenants, on) -> dict:
 @frappe.whitelist(methods=["GET"])
 def list_properties() -> dict:
 	"""Units of the scope, grouped by building; for staff, by landlord first."""
-	scope = get_scope(("manager", "owner"))
+	scope = _scope("owner")
 	on = getdate(today())
 	props, leases, _lease_property = _context(scope)
 	current = data.current_lease_by_property(leases, on)
@@ -175,7 +214,7 @@ def list_properties() -> dict:
 
 	units = [prop for prop in props.values() if not prop.is_group]
 	owners = data.customer_names(owner_of(unit) for unit in units)
-	by_landlord = scope.is_manager and len({owner_of(unit) for unit in units}) > 1
+	by_landlord = access.is_manager(scope.user) and len({owner_of(unit) for unit in units}) > 1
 
 	sections: dict = {}
 	for unit in units:  # ordered by tree position
@@ -209,16 +248,16 @@ def list_properties() -> dict:
 
 @frappe.whitelist(methods=["GET"])
 def get_property(name: str) -> dict:
-	scope = get_scope(("manager", "owner"))
-	if not scope.can_see_property(name):
-		not_found()
+	scope = _scope("owner")
+	if name not in scope.properties:
+		_not_found()
 	on = getdate(today())
 	props = data.get_properties([name])
 	prop = props[name]
 	if prop.parent_property:
 		props.update(data.get_properties([prop.parent_property]))
 
-	visible = set(scope.leases())
+	visible = set(scope.leases)
 	leases = [lease for lease in data.get_leases(filters={"property": name}) if lease.name in visible]
 	current = data.current_lease_by_property(leases, on).get(name)
 	items = data.lease_items([lease.name for lease in leases])
@@ -227,7 +266,7 @@ def get_property(name: str) -> dict:
 
 	invoices = (
 		data.invoice_summaries(
-			{**scope.invoice_filters(), "lease": ["in", list(lease_property)]}, lease_property, props, on
+			{**_invoice_filters(scope), "lease": ["in", list(lease_property)]}, lease_property, props, on
 		)
 		if lease_property
 		else []
@@ -271,9 +310,9 @@ def get_property(name: str) -> dict:
 
 @frappe.whitelist(methods=["GET"])
 def get_lease(name: str) -> dict:
-	scope = get_scope()
-	if not scope.can_see_lease(name):
-		not_found()
+	scope = _scope()
+	if name not in scope.leases:
+		_not_found()
 	on = getdate(today())
 	lease = data.get_leases([name])[0]
 	props = data.get_properties([lease.property]) if lease.property else {}
@@ -284,14 +323,15 @@ def get_lease(name: str) -> dict:
 	items = data.lease_items([name]).get(name, [])
 	tenants = data.customer_names([lease.customer])
 	invoices = data.invoice_summaries(
-		{**scope.invoice_filters(), "lease": name}, {name: lease.property}, props, on
+		{**_invoice_filters(scope), "lease": name}, {name: lease.property}, props, on
 	)
 	by_id = {invoice["id"]: invoice for invoice in invoices}
 	_key, months = data.frequency_of(lease.frequency)
 	labels = data.item_names(item.lease_item for item in items)
 
 	tenant_contact = {}
-	if scope.role != "tenant" and lease.customer:
+	# Contact details for the landlord or manager of the property, not for the tenant themselves.
+	if name in scope.owned_leases and lease.customer:
 		tenant_contact = (
 			frappe.db.get_value("Customer", lease.customer, ["email_id", "mobile_no"], as_dict=True) or {}
 		)
@@ -318,24 +358,24 @@ def get_lease(name: str) -> dict:
 
 
 def _all_lease_properties(scope: Scope) -> dict[str, str]:
-	return {lease.name: lease.property for lease in data.get_leases(scope.leases())}
+	return {lease.name: lease.property for lease in data.get_leases(scope.leases)}
 
 
 @frappe.whitelist(methods=["GET"])
 def list_invoices(tab: str = "unpaid") -> list[dict]:
-	scope = get_scope()
-	filters = scope.invoice_filters()
+	scope = _scope()
+	filters = _invoice_filters(scope)
 	filters["outstanding_amount"] = [">", 0] if tab == "unpaid" else ["<=", 0]
 	return data.invoice_summaries(filters, _all_lease_properties(scope), {}, getdate(today()))
 
 
 @frappe.whitelist(methods=["GET"])
 def get_invoice(name: str) -> dict:
-	scope = get_scope()
-	if not scope.can_see_invoice(name):
-		not_found()
+	scope = _scope()
+	if not _can_see_invoice(scope, name):
+		_not_found()
 	summary = data.invoice_summaries(
-		{**scope.invoice_filters(), "name": name}, _all_lease_properties(scope), {}, getdate(today())
+		{**_invoice_filters(scope), "name": name}, _all_lease_properties(scope), {}, getdate(today())
 	)[0]
 	return {**summary, "items": data.invoice_items(name), "payments": data.payments_for([name])}
 
@@ -343,10 +383,10 @@ def get_invoice(name: str) -> dict:
 @frappe.whitelist(methods=["GET"])
 def download(kind: str, name: str):
 	"""PDF of an invoice or of a receipt (the Payment Entry), from the standard print format."""
-	scope = get_scope()
+	scope = _scope()
 	if kind == "invoice":
-		if not scope.can_see_invoice(name):
-			not_found()
+		if not _can_see_invoice(scope, name):
+			_not_found()
 		doctype = "Sales Invoice"
 	elif kind == "receipt":
 		invoices = frappe.get_all(
@@ -355,15 +395,14 @@ def download(kind: str, name: str):
 			pluck="reference_name",
 			ignore_permissions=True,
 		)
-		# The tenant paid all of it. A landlord only gets a receipt that is entirely
-		# about their own invoices: one payment can settle two landlords' rent.
-		visible = [scope.can_see_invoice(invoice) for invoice in invoices]
-		allowed = all(visible) if scope.role == "owner" else any(visible)
-		if frappe.db.get_value("Payment Entry", name, "docstatus") != 1 or not invoices or not allowed:
-			not_found()
+		# Only a receipt entirely about the user's own invoices: one payment can settle the rent
+		# of two landlords, or of two leases with different tenants.
+		allowed = bool(invoices) and all(_can_see_invoice(scope, invoice) for invoice in invoices)
+		if not allowed or frappe.db.get_value("Payment Entry", name, "docstatus") != 1:
+			_not_found()
 		doctype = "Payment Entry"
 	else:
-		not_found()
+		_not_found()
 
 	from frappe.translate import print_language
 
@@ -395,46 +434,23 @@ def download(kind: str, name: str):
 # --------------------------------------------------------------------------- #
 
 
-def _issue_scope(scope: Scope) -> tuple[dict, list]:
-	"""Requests this user may see: their own as a tenant, those of their properties as landlord or manager."""
-	if scope.role == "tenant":
-		return {}, [
-			["Issue", "customer", "in", scope.customers or [""]],
-			["Issue", "raised_by", "=", scope.user],
-		]
-	if scope.is_manager:
-		return {}, []
-	return {"property_name": ["in", list(scope.properties()) or [""]]}, []
-
-
-def _tenant_issue_filters(scope: Scope) -> tuple[dict, list]:
-	return _issue_scope(scope)
-
-
-def _tenant_issues(scope: Scope, limit: int | None = None) -> list[dict]:
-	filters, or_filters = _issue_scope(scope)
-	rows = frappe.get_all(
-		"Issue",
-		filters=filters,
-		or_filters=or_filters,
-		fields=data.ISSUE_FIELDS,
-		order_by="creation desc",
-		limit=limit,
-		ignore_permissions=True,
-	)
+def _issues(scope: Scope, limit: int | None = None) -> list[dict]:
+	"""Requests in scope, newest first: all of an owned property's, a tenant's own on their units."""
 	props: dict = {}
-	return [data.issue_summary(row, props) for row in rows]
+	return [
+		data.issue_summary(row, props) for row in access.get_issues(scope, data.ISSUE_FIELDS, limit=limit)
+	]
 
 
 @frappe.whitelist(methods=["GET"])
 def get_tenant_home() -> dict:
-	scope = get_scope(("tenant",))
+	scope = _scope("tenant")
 	on = getdate(today())
 	props, leases, lease_property = _context(scope)
 	current = [lease for lease in leases if data.is_current(lease, on)]
 	unpaid = sorted(
 		data.invoice_summaries(
-			{**scope.invoice_filters(), "outstanding_amount": [">", 0]}, lease_property, props, on
+			{**_invoice_filters(scope), "outstanding_amount": [">", 0]}, lease_property, props, on
 		),
 		key=lambda invoice: invoice["dueDate"],
 	)
@@ -443,13 +459,13 @@ def get_tenant_home() -> dict:
 	if unpaid:
 		# `unpaid` is sorted by due date: the first one is the oldest unpaid invoice.
 		next_due = {"kind": "invoice", "invoice": unpaid[0]}
-	else:
+	elif current:
 		# Nothing to pay: the next period not invoiced yet, read against the real invoices.
 		items = data.lease_items([lease.name for lease in current])
 		invoiced = {
 			invoice["id"]: invoice
 			for invoice in data.invoice_summaries(
-				{**scope.invoice_filters(), "lease": ["in", [lease.name for lease in current] or [""]]},
+				{**_invoice_filters(scope), "lease": ["in", [lease.name for lease in current]]},
 				lease_property,
 				props,
 				on,
@@ -465,7 +481,7 @@ def get_tenant_home() -> dict:
 			next_due = {"kind": "schedule", "line": min(upcoming, key=lambda line: line["dueDate"])}
 
 	first_name = frappe.db.get_value("User", scope.user, "first_name") or ""
-	latest = _tenant_issues(scope, limit=1)
+	latest = _issues(scope, limit=1)
 	return {
 		"firstName": first_name,
 		"next": next_due,
@@ -486,7 +502,7 @@ def get_tenant_home() -> dict:
 @frappe.whitelist(methods=["GET"])
 def list_my_leases() -> list[dict]:
 	"""Tenant's leases, current first, for the "My lease" screen."""
-	scope = get_scope(("tenant",))
+	scope = _scope("tenant")
 	on = getdate(today())
 	props, leases, _lease_property = _context(scope)
 	summaries = data.lease_summaries(leases, props, on)
@@ -501,26 +517,21 @@ def list_my_leases() -> list[dict]:
 @frappe.whitelist(methods=["GET"])
 def list_issues() -> list[dict]:
 	"""Tenant: own requests. Landlord and manager: requests on their properties."""
-	return _tenant_issues(get_scope())
+	return _issues(_scope())
 
 
 @frappe.whitelist(methods=["GET"])
 def get_issue(name: str) -> dict:
-	scope = get_scope()
-	filters, or_filters = _issue_scope(scope)
-	rows = frappe.get_all(
-		"Issue",
-		filters={**filters, "name": name},
-		or_filters=or_filters,
-		fields=[*data.ISSUE_FIELDS, "description", "resolution_details", "attachment"],
-		limit=1,
-		ignore_permissions=True,
+	scope = _scope()
+	rows = access.get_issues(
+		scope, [*data.ISSUE_FIELDS, "description", "resolution_details", "attachment"], name=name
 	)
 	if not rows:
-		not_found()
-	row = rows[0]
-	owner = maintenance.effective_owner(row.property_name)
-	can_decide = scope.role != "tenant" and maintenance.can_decide(name, scope.user)
+		_not_found()
+	row = frappe._dict(rows[0])
+	# The landlord's name is for the owner side; a tenant does not see who owns the unit.
+	owner_view = row.property_name in scope.owned_properties
+	owner = maintenance.effective_owner(row.property_name) if owner_view else None
 
 	replies = frappe.get_all(
 		"Communication",
@@ -540,9 +551,9 @@ def get_issue(name: str) -> dict:
 		"resolution": html.unescape(strip_html(row.resolution_details or "")).strip() or None,
 		"photos": _issue_photos(name),
 		"hasPhoto": bool(row.attachment),
-		"canDecide": can_decide,
-		"canComplete": scope.role == "tenant" and maintenance.can_complete(name, scope.user),
-		"landlordName": frappe.db.get_value("Customer", owner, "customer_name") if owner and scope.role != "tenant" else None,
+		"canDecide": maintenance.can_decide(name, scope.user),
+		"canComplete": maintenance.can_complete(name, scope.user),
+		"landlordName": frappe.db.get_value("Customer", owner, "customer_name") if owner else None,
 		"replies": [
 			{
 				"author": reply.sender_full_name or reply.sender,
@@ -575,12 +586,7 @@ def issue_photo(name: str, file: str | None = None):
 	Frappe serves a private file to users who can read the Issue; landlords and tenants cannot,
 	so this method checks the scope, then returns the file.
 	"""
-	scope = get_scope()
-	filters, or_filters = _issue_scope(scope)
-	visible = frappe.get_all(
-		"Issue", filters={**filters, "name": name}, or_filters=or_filters, pluck="name", limit=1, ignore_permissions=True
-	)
-	if not visible:
+	if not access.get_issues(_scope(), ["name"], name=name):
 		frappe.throw(_("You do not have access to this photo."), frappe.PermissionError)
 	photos = _issue_photos(name)
 	chosen = next((p for p in photos if p["id"] == file), None) if file else (photos[0] if photos else None)
@@ -598,20 +604,22 @@ def issue_photo(name: str, file: str | None = None):
 	frappe.local.response.filecontent = content
 	frappe.local.response.type = "download"
 	frappe.local.response.display_content_as = "inline"
-	frappe.local.response["content_type"] = {"png": "image/png", "webp": "image/webp"}.get(extension, "image/jpeg")
+	frappe.local.response["content_type"] = {"png": "image/png", "webp": "image/webp"}.get(
+		extension, "image/jpeg"
+	)
 
 
 @frappe.whitelist(methods=["POST"])
 def decide_issue(name: str, decision: str) -> dict:
 	"""Landlord approves or rejects a request awaiting approval (the app's button)."""
-	get_scope(("owner", "manager"))
+	_scope("owner")
 	return maintenance.decide(name, decision)
 
 
 @frappe.whitelist(methods=["POST"])
 def complete_issue(name: str) -> dict:
 	"""The tenant who made a request closes it, once the work is done."""
-	get_scope(("tenant",))
+	_scope("tenant")
 	return maintenance.complete(name)
 
 
@@ -626,10 +634,15 @@ def _decode_photo(photo: str, position: int = 1) -> tuple[bytes, str]:
 	try:
 		content = base64.b64decode(match.group(2), validate=True)
 	except (binascii.Error, ValueError):
-		frappe.throw(_("Photo {0} could not be read. Please choose another one.").format(position), title=_("Photo refused"))
+		frappe.throw(
+			_("Photo {0} could not be read. Please choose another one.").format(position),
+			title=_("Photo refused"),
+		)
 	if len(content) > MAX_PHOTO_BYTES:
 		frappe.throw(
-			_("Photo {0} is larger than {1} MB. Please choose a smaller one.").format(position, MAX_PHOTO_BYTES // (1024 * 1024)),
+			_("Photo {0} is larger than {1} MB. Please choose a smaller one.").format(
+				position, MAX_PHOTO_BYTES // (1024 * 1024)
+			),
 			title=_("Photo refused"),
 		)
 	return content, PHOTO_TYPES[match.group(1)]
@@ -668,7 +681,7 @@ def create_issue(
 	Website Users), and the photos are saved as private files attached to it (the standard
 	`upload_file` needs write permission on the Issue).
 	"""
-	scope = get_scope(("tenant",))
+	scope = _scope("tenant")
 	# Per account, not per IP: tenants on one mobile network share addresses.
 	recent = frappe.db.count(
 		"Issue", {"raised_by": scope.user, "creation": [">", add_to_date(now_datetime(), hours=-1)]}
@@ -683,7 +696,7 @@ def create_issue(
 		category = "other"
 
 	on = getdate(today())
-	leases = [lease for lease in data.get_leases(scope.leases()) if data.is_current(lease, on)]
+	leases = [lease for lease in data.get_leases(scope.leases) if data.is_current(lease, on)]
 	if property:
 		lease = next((lease for lease in leases if lease.property == property), None)
 		if lease is None:

@@ -16,7 +16,8 @@ import frappe
 from frappe.translate import print_language
 from frappe.utils import add_days, fmt_money, formatdate, get_url, getdate, today
 
-from .access import LANDLORD_ROLE, TENANT_ROLE
+from skyeng_immo.access import LANDLORD as LANDLORD_ROLE
+from skyeng_immo.access import TENANT as TENANT_ROLE
 
 REMINDER_DAYS = 5
 APP_ROUTE = "/sky-immo"
@@ -105,30 +106,17 @@ def ensure_email_templates():
 
 
 def app_users_of(customer: str, role: str) -> list[frappe._dict]:
-	"""Enabled accounts tied to the Customer that hold ``role``."""
+	"""Enabled accounts that are portal users of the Customer and hold ``role``.
+
+	Same link as the app's access (`skyeng_immo.access.get_customers`): Portal Users only.
+	"""
 	users = set(
 		frappe.get_all(
 			"Portal User",
-			filters={"parent": customer, "parenttype": "Customer"},
+			filters={"parent": customer, "parenttype": "Customer", "parentfield": "portal_users"},
 			pluck="user",
-			ignore_permissions=True,
 		)
 	)
-	contacts = frappe.get_all(
-		"Dynamic Link",
-		filters={"parenttype": "Contact", "link_doctype": "Customer", "link_name": customer},
-		pluck="parent",
-		ignore_permissions=True,
-	)
-	if contacts:
-		users.update(
-			frappe.get_all(
-				"Contact",
-				filters={"name": ["in", contacts], "user": ["is", "set"]},
-				pluck="user",
-				ignore_permissions=True,
-			)
-		)
 	users.discard(None)
 	if not users:
 		return []

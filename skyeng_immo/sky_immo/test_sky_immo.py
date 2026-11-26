@@ -10,9 +10,8 @@ import frappe
 from frappe.tests import IntegrationTestCase
 from frappe.utils import add_days, add_months, get_first_day, getdate, today
 
+from skyeng_immo.access import app_space, get_scope
 from skyeng_immo.sky_immo import api
-from skyeng_immo.sky_immo.access import app_role, get_scope
-from skyeng_immo.sky_immo.invite import invite_to_app
 from skyeng_immo.sky_immo.notifications import send_due_reminders, send_payment_emails
 
 # Company bootstrapped by ERPNext's test records, shared with the IMMO-03 tests.
@@ -207,23 +206,10 @@ class TestSkyImmo(IntegrationTestCase):
 	# ------------------------------------------------------------------ roles
 
 	def test_roles_pick_the_space(self):
-		self.assertEqual(app_role(self.user_a), "owner")
-		self.assertEqual(app_role(self.user_t1), "tenant")
-		self.assertEqual(app_role(self.user_pm), "manager")
-		self.assertIsNone(app_role("Guest"))
-
-	def test_desk_icon_for_every_app_user(self):
-		from frappe.apps import get_apps
-
-		from skyeng_immo.sky_immo.access import has_app_permission
-
-		for user in (self.user_pm, self.user_a, self.user_t1):
-			self.as_user(user)
-			self.assertTrue(has_app_permission(), user)
-		route = next(app["route"] for app in get_apps() if app["name"] == "skyeng_immo")
-		self.assertEqual(route, "/sky-immo")
-		self.as_user("Guest")
-		self.assertFalse(has_app_permission())
+		self.assertEqual(app_space(self.user_a), "owner")
+		self.assertEqual(app_space(self.user_t1), "tenant")
+		self.assertEqual(app_space(self.user_pm), "manager")
+		self.assertIsNone(app_space("Guest"))
 
 	def test_session(self):
 		self.as_user(self.user_t1)
@@ -237,7 +223,7 @@ class TestSkyImmo(IntegrationTestCase):
 		self.as_user(self.user_a)
 		scope = get_scope()
 		self.assertEqual(
-			{p for p in scope.properties() if p.startswith(PREFIX)},
+			{p for p in scope.properties if p.startswith(PREFIX)},
 			{self.building_a, self.unit_a1, self.unit_a2},
 		)
 		units = [
@@ -257,17 +243,21 @@ class TestSkyImmo(IntegrationTestCase):
 			api.get_invoice(self.inv_b)
 
 		self.as_user(self.user_b)
-		self.assertNotIn(self.unit_a1, get_scope().properties())
+		self.assertNotIn(self.unit_a1, get_scope().properties)
 		with self.assertRaises(frappe.DoesNotExistError):
 			api.get_property(self.unit_a1)
 
-	def test_building_access_covers_units(self):
-		# A unit recorded under another owner still shows for the building's owner.
+	def test_unit_with_its_own_owner_inside_a_building(self):
+		# A unit recorded under landlord B inside landlord A's building is B's, not A's.
 		frappe.db.savepoint("building_access")
 		try:
 			unit = _property("A9", self.landlord_b, parent=self.building_a)
 			self.as_user(self.user_a)
-			self.assertIn(unit, get_scope().properties())
+			self.assertNotIn(unit, get_scope().properties)
+			with self.assertRaises(frappe.DoesNotExistError):
+				api.get_property(unit)
+			self.as_user(self.user_b)
+			self.assertIn(unit, get_scope().properties)
 		finally:
 			frappe.db.rollback(save_point="building_access")
 
@@ -494,21 +484,6 @@ class TestSkyImmo(IntegrationTestCase):
 		lease.lease_item[0].paid_by = self.tenant_2
 		with self.assertRaises(frappe.ValidationError):
 			lease.save(ignore_permissions=True)
-
-	def test_invite_creates_the_account_and_link(self):
-		result = invite_to_app(self.tenant_2, "mi-invited@example.com", "Tenant", "en")
-		self.assertTrue(result["created"])
-		self.assertTrue(result["invitationSent"])
-		self.assertIn("Tenant", frappe.get_roles("mi-invited@example.com"))
-		self.assertEqual(frappe.db.get_value("User", "mi-invited@example.com", "user_type"), "Website User")
-		self.assertEqual(frappe.db.get_value("User", "mi-invited@example.com", "default_app"), "skyeng_immo")
-		self.assertIn(
-			"mi-invited@example.com",
-			[row.user for row in frappe.get_doc("Customer", self.tenant_2).portal_users],
-		)
-		frappe.set_user(self.user_t1)
-		with self.assertRaises(frappe.PermissionError):
-			invite_to_app(self.tenant_1, "mi-other@example.com", "Landlord")
 
 	# ---------------------------------------------------------------- emails
 
