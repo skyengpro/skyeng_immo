@@ -1,7 +1,7 @@
 app_name = "skyeng_immo"
 app_title = "SkyEng Immo"
 app_publisher = "SkyEngPro"
-app_description = "Gestion immobiliere - occupants, visiteurs, vehicules, parking"
+app_description = "Espace bailleur et locataire pour la gestion immobiliere (ERPNext, PropMS)"
 app_email = "contact@skyengpro.com"
 app_license = "MIT"
 
@@ -16,17 +16,35 @@ required_apps = ["erpnext", "propms"]
 # not four DocTypes whose permissions point at roles that do not exist.
 after_install = "skyeng_immo.install.after_install"
 after_migrate = "skyeng_immo.install.after_migrate"
+before_uninstall = "skyeng_immo.install.before_uninstall"
+
+# Tile on the apps screen. It is also how a user's default app resolves to /sky-immo.
+add_to_apps_screen = [
+	{
+		"name": app_name,
+		"title": "Sky-immo",
+		"logo": "/assets/skyeng_immo/frontend/icon-192.png",
+		"route": "/sky-immo",
+		"has_permission": "skyeng_immo.navigation.has_app_permission",
+	}
+]
+
+# Landing page after sign-in: managers of a customer-owned site go to the app.
+get_website_user_home_page = "skyeng_immo.navigation.get_home_page"
+
+# Serves the built frontend at /sky-immo; every sub-route returns the same page.
+website_route_rules = [
+	{"from_route": "/sky-immo/<path:app_path>", "to_route": "sky_immo"},
+	{"from_route": "/sky-immo", "to_route": "sky_immo"},
+]
 
 # --------------------------------------------------------------------------- #
-# Sky Immo: the landlord and tenant app (doc/EP-01-landlord-tenant-app.md)    #
+# Sky Immo: the landlord and tenant app (doc/app-usage-flows-immo.md)         #
 # --------------------------------------------------------------------------- #
 
 # The Vue app (frontend/, frappe-ui) is built into public/frontend and served as the page
-# www/sky-immo.html; every deep link falls back to that page. It is a PWA: its service worker is
-# re-served from /sky-immo/sw.js so it controls the whole /sky-immo scope.
-website_route_rules = [
-	{"from_route": "/sky-immo/<path:app_path>", "to_route": "sky-immo"},
-]
+# www/sky_immo.html by www/sky_immo.py. It is a PWA: its service worker is re-served from
+# /sky-immo/sw.js so it controls the whole /sky-immo scope.
 page_renderer = ["skyeng_immo.sky_immo.service_worker.ServiceWorkerPage"]
 
 # The app used to live at /mon-immo: keep old links and bookmarks working.
@@ -34,34 +52,19 @@ website_redirects = [
 	{"source": r"/mon-immo(/.*)?", "target": r"/sky-immo\1"},
 ]
 
-# After the invitation's "set your password" step (and after sign-in), Frappe
-# sends website users to their role's home page: the app.
-role_home_page = {"Landlord": "sky-immo", "Tenant": "sky-immo"}
-
-# Icon on the desk's apps screen and in the sidebar app switcher, for staff, landlords
-# and tenants (see access.has_app_permission).
-add_to_apps_screen = [
-	{
-		"name": "skyeng_immo",
-		"logo": "/assets/skyeng_immo/frontend/logo-mark.svg",
-		"title": "Sky Immo",
-		"route": "/sky-immo",
-		"has_permission": "skyeng_immo.sky_immo.access.has_app_permission",
-	}
-]
-
-# "Give access to the app" button on the Customer form.
-doctype_js = {
-	"Customer": "public/js/customer_sky_immo.js",
-	"Issue": "public/js/issue_sky_immo.js",
-}
-
+# Data entry rules, the repair decision on Issue, and the rent receipts and notices.
 doc_events = {
-	"User": {"validate": "skyeng_immo.sky_immo.access.set_default_app"},
+	"User": {"validate": "skyeng_immo.navigation.set_default_app"},
 	"Property": {"validate": "skyeng_immo.sky_immo.validation.validate_property"},
 	"Lease": {"validate": "skyeng_immo.sky_immo.validation.validate_lease"},
 	"Issue": {"on_update": "skyeng_immo.sky_immo.maintenance.on_issue_update"},
 	"Payment Entry": {"on_submit": "skyeng_immo.sky_immo.notifications.on_payment_entry_submit"},
+}
+
+# "Invite to Sky-immo" on the Customer form; Approve / Reject on the Issue form.
+doctype_js = {
+	"Customer": "public/js/customer.js",
+	"Issue": "public/js/issue_sky_immo.js",
 }
 
 scheduler_events = {
@@ -76,6 +79,8 @@ scheduler_events = {
 # sweep in ERPNext's ~50 built-in cards and charts and make this app own and
 # overwrite them on every migrate.
 fixtures = [
+	# Re-imported on every migrate, which restores desk_access = 0 if changed on a site.
+	{"dt": "Role", "filters": [["name", "in", ["Landlord", "Tenant"]]]},
 	{
 		"dt": "Number Card",
 		"filters": [

@@ -1,25 +1,28 @@
 [project]
 name = "skyeng_immo"
 authors = [{ name = "SkyEngPro", email = "contact@skyengpro.com" }]
-description = "Gestion immobiliere SkyEngPro - occupants, visiteurs, vehicules et places de parking"
-requires-python = ">=3.10"
+description = "SkyEngPro property management: landlord and tenant app on top of ERPNext and PropMS"
+requires-python = ">=3.14"
 readme = "README.md"
 dynamic = ["version"]
 
-# NOTE: frappe / erpnext / propms are deliberately NOT declared here.
-# The bench provides them. Declaring `frappe` makes uv resolve the framework
-# itself, and frappe pins pypika to a git URL, which uv rejects for anything
-# that is not a direct requirement -- the whole image build then dies with
-# exit 167. See skyengpro/propms commit 8c0b1d8.
+# frappe, erpnext and propms come from the bench, never from pip.
+# Declaring them makes uv reject frappe's pypika git pin: Press build exit 167.
 dependencies = []
 
 [build-system]
 requires = ["flit_core >=3.4,<4"]
 build-backend = "flit_core.buildapi"
 
+# Frappe Cloud/Press reads this to check the bench before adding the app.
+# This is bench metadata, not a pip dependency (scripts/check_packaging.py).
+[tool.bench.frappe-dependencies]
+frappe = ">=16.0.0,<17.0.0"
+erpnext = ">=16.0.0,<17.0.0"
+
 [tool.ruff]
 line-length = 110
-target-version = "py310"
+target-version = "py314"
 
 [tool.ruff.lint]
 select = ["F", "E", "W", "I", "UP", "B"]

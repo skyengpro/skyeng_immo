@@ -115,3 +115,16 @@ def install_asset_fields():
 	if not frappe.db.exists("DocType", "Asset"):
 		return
 	create_custom_fields(ASSET_CUSTOM_FIELDS, ignore_validate=True)
+
+
+def before_uninstall():
+	remove_asset_fields()
+
+
+def remove_asset_fields():
+	"""Drops the Asset custom fields this app added; roles are kept so users keep theirs."""
+	for doctype, fields in ASSET_CUSTOM_FIELDS.items():
+		for field in fields:
+			name = frappe.db.get_value("Custom Field", {"dt": doctype, "fieldname": field["fieldname"]})
+			if name:
+				frappe.delete_doc("Custom Field", name, ignore_permissions=True, force=True)

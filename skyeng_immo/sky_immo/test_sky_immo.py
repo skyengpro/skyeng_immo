@@ -387,13 +387,17 @@ class TestSkyImmo(IntegrationTestCase):
 
 		detail = api.get_issue(created["id"])
 		self.assertTrue(detail["urgent"])
-		self.assertTrue(detail["photo"].startswith("data:image/png;base64,"))
-		self.assertEqual(base64.b64decode(detail["photo"].split(",", 1)[1])[:4], b"\x89PNG")
+		self.assertTrue(detail["hasPhoto"])
+		# the photo is served by issue_photo, after the scope check
+		api.issue_photo(created["id"])
+		self.assertEqual(frappe.local.response.filecontent[:4], b"\x89PNG")
 		self.assertEqual(api.get_tenant_home()["latestIssue"]["id"], created["id"])
 
 		self.as_user(self.user_t2)
 		with self.assertRaises(frappe.DoesNotExistError):
 			api.get_issue(created["id"])
+		with self.assertRaises(frappe.PermissionError):
+			api.issue_photo(created["id"])
 		self.assertFalse([i for i in api.list_issues() if i["id"] == created["id"]])
 
 	def test_issue_rejects_non_images(self):
