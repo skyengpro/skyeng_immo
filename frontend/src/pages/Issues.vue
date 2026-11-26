@@ -19,7 +19,10 @@
         <p class="min-w-0 flex-1 text-[13.5px]"><b>{{ tn(awaiting, '{0} request waits for your decision', '{0} requests wait for your decision') }}</b></p>
       </div>
       <Chips v-if="isOwner" v-model="filter" class="mb-5" :label="t('Filter')" :options="options" />
-      <IssueList :key="filter" :issues="shown" :base="base" :show-tenant="isOwner" />
+      <section v-for="section in sections" :key="section.landlord?.id || 'all'" class="mb-8 last:mb-0">
+        <h2 v-if="section.landlord" class="mb-3 px-1 font-display text-[22px] text-ink">{{ t('Landlord: {0}', section.landlord.name) }}</h2>
+        <IssueList :key="filter" :issues="section.issues" :base="base" :show-tenant="isOwner" />
+      </section>
     </template>
   </div>
 </template>
@@ -46,6 +49,16 @@ const count = (v) => (v === 'all' ? data.value.length : data.value.filter((i) =>
 const awaiting = computed(() => (data.value ? count('awaiting_approval') : 0))
 const options = computed(() => [['all', 'All'], ...STATES].filter(([v]) => v === 'all' || count(v)).map(([value, label]) => ({ value, label: t(label), count: count(value) })))
 const shown = computed(() => (data.value || []).filter((i) => filter.value === 'all' || i.approval === filter.value))
+// For staff over several landlords (mode B): one section per landlord, in the order received.
+const sections = computed(() => {
+  const groups = new Map()
+  for (const issue of shown.value) {
+    const key = issue.landlord?.id || ''
+    if (!groups.has(key)) groups.set(key, { landlord: issue.landlord, issues: [] })
+    groups.get(key).issues.push(issue)
+  }
+  return [...groups.values()]
+})
 // open on what needs a decision, when something does
 watch(data, (rows, old) => {
   if (!old && isOwner && rows?.some((i) => i.approval === 'awaiting_approval')) filter.value = 'awaiting_approval'

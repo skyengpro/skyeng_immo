@@ -447,8 +447,8 @@ def invoice_summaries(filters: dict, lease_property: dict[str, str], props: dict
 	return result
 
 
-def payments_for(invoice_names, since=None) -> list[dict]:
-	"""Submitted Payment Entries allocated to these invoices, newest first; from ``since`` if given."""
+def payments_for(invoice_names, since=None, until=None) -> list[dict]:
+	"""Submitted Payment Entries allocated to these invoices, newest first; dated ``since``..``until``."""
 	if not invoice_names:
 		return []
 	pe = DocType("Payment Entry")
@@ -471,6 +471,7 @@ def payments_for(invoice_names, since=None) -> list[dict]:
 		.where(ref.reference_doctype == "Sales Invoice")
 		.where(ref.reference_name.isin(list(invoice_names)))
 		.where(pe.posting_date >= since if since else pe.docstatus == 1)
+		.where(pe.posting_date <= until if until else pe.docstatus == 1)
 		.orderby(pe.posting_date, order=frappe.qb.desc)
 		.orderby(pe.name, order=frappe.qb.desc)
 	).run(as_dict=True)

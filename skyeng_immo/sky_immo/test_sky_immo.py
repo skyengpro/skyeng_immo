@@ -122,13 +122,13 @@ def _invoice(customer: str, lease: str, item: str, income: str, due_days: int) -
 	return doc.name
 
 
-def _pay(invoice: str) -> str:
+def _pay(invoice: str, on: str | None = None) -> str:
 	from erpnext.accounts.doctype.payment_entry.payment_entry import get_payment_entry
 
 	pe = get_payment_entry("Sales Invoice", invoice)
-	pe.posting_date = today()
+	pe.posting_date = on or today()
 	pe.reference_no = f"{PREFIX}-REF"
-	pe.reference_date = today()
+	pe.reference_date = on or today()
 	pe.insert(ignore_permissions=True)
 	pe.submit()
 	return pe.name
@@ -287,6 +287,16 @@ class TestSkyImmo(IntegrationTestCase):
 		self.assertEqual([inv["id"] for inv in data["overdue"]], [self.inv_late])
 		self.assertEqual(data["overdue"][0]["leaseId"], self.lease_1)
 		self.assertEqual(data["overdue"][0]["daysLate"], 20)
+
+	def test_collected_this_month_ignores_payments_dated_later(self):
+		frappe.db.savepoint("future_payment")
+		try:
+			_pay(self.inv_b, on=str(get_first_day(add_months(today(), 1))))
+			self.as_user(self.user_b)
+			self.assertEqual(api.get_owner_dashboard()["stats"]["collectedThisMonth"], 0)
+		finally:
+			frappe.set_user("Administrator")
+			frappe.db.rollback(save_point="future_payment")
 
 	def test_property_and_tenant_screens(self):
 		self.as_user(self.user_a)

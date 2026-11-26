@@ -208,6 +208,27 @@ class TestAppEndpoints(IntegrationTestCase):
 		self.assertGreater(listed[s.lease_2a]["amountPerPeriod"], 0)
 		self.assertEqual(listed[s.lease_2a]["frequency"], "monthly")
 
+	def test_manager_sees_repairs_grouped_by_landlord(self):
+		s = self.site
+		with self.set_user(s.users["manager"]):
+			rows = {row["id"]: row for row in api.list_issues("owner")}
+		self.assertEqual(rows[s.issue_1a]["landlord"]["id"], s.customers["Landlord 1"])
+		self.assertEqual(rows[s.issue_1b]["landlord"]["id"], s.customers["Landlord 2"])
+		with self.set_user(s.users["landlord1"]):
+			self.assertTrue(all(not row.get("landlord") for row in api.list_issues("owner")))
+
+	def test_decisions_do_not_tell_a_stranger_whether_a_request_exists(self):
+		from skyeng_immo.sky_immo import maintenance
+
+		with self.set_user(self.site.users["landlord1"]):
+			for name in (self.site.issue_2a, "ISS-DOES-NOT-EXIST"):
+				with self.subTest(name=name), self.assertRaises(frappe.PermissionError):
+					maintenance.decide(name, "approve")
+		with self.set_user(self.site.users["tenant1"]):
+			for name in (self.site.issue_2a, "ISS-DOES-NOT-EXIST"):
+				with self.subTest(name=name), self.assertRaises(frappe.PermissionError):
+					maintenance.complete(name)
+
 	def test_screens_of_the_other_side_are_refused(self):
 		with self.set_user(self.site.users["tenant1"]):
 			for endpoint in (api.get_owner_dashboard, api.list_properties, api.list_tenants):

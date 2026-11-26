@@ -710,3 +710,192 @@ msgstr ""
 #: skyeng_immo/immobilier/doctype/parking_space/parking_space.py:21
 msgid "{0} ne depend pas de {1}. Une place ne peut etre attribuee qu'a une unite du meme site."
 msgstr ""
+
+#: skyeng_immo/sky_immo/validation.py:36
+#, python-brace-format
+msgid "A lease has a single tenant: Customer ({0}) and Lease Customer ({1}) must be the same."
+msgstr "Un bail a un seul locataire : Client ({0}) et Client du bail ({1}) doivent être identiques."
+
+#: skyeng_immo/sky_immo/maintenance.py:143
+msgid "A request can be marked as completed only while it is in progress."
+msgstr "Une demande ne peut être marquée terminée que lorsqu'elle est en cours."
+
+#: skyeng_immo/sky_immo/maintenance.py:87
+msgid "Already decided"
+msgstr "Déjà décidée"
+
+#: skyeng_immo/public/js/issue_sky_immo.js:24
+msgid "Approve"
+msgstr "Approuver"
+
+#: skyeng_immo/public/js/issue_sky_immo.js:24
+msgid "Approve this request?"
+msgstr "Approuver cette demande ?"
+
+#: skyeng_immo/sky_immo/maintenance.py:96
+msgid "Approved"
+msgstr "Approuvé"
+
+#: skyeng_immo/fixtures/custom_field.json:9
+msgid "Awaiting approval"
+msgstr "En attente d'approbation"
+
+#: skyeng_immo/fixtures/custom_field.json:9
+msgid "Completed"
+msgstr ""
+
+#: skyeng_immo/public/js/issue_sky_immo.js:24
+#: skyeng_immo/public/js/issue_sky_immo.js:25
+#: skyeng_immo/public/js/issue_sky_immo.js:26
+msgid "Decision"
+msgstr "Décision"
+
+#: skyeng_immo/sky_immo/api.py:805
+msgid "Description missing"
+msgstr "Description manquante"
+
+#: skyeng_immo/fixtures/custom_field.json:9
+msgid "In progress"
+msgstr "En cours"
+
+#: skyeng_immo/sky_immo/maintenance.py:149
+#, python-brace-format
+msgid "Marked as completed by {0} in Sky Immo."
+msgstr "Marquée terminée par {0} dans Sky Immo."
+
+#: skyeng_immo/sky_immo/api.py:72 skyeng_immo/sky_immo/api.py:684
+#: skyeng_immo/sky_immo/api.py:689 skyeng_immo/sky_immo/maintenance.py:83
+#: skyeng_immo/sky_immo/maintenance.py:135
+msgid "Not found"
+msgstr ""
+
+#: skyeng_immo/sky_immo/maintenance.py:144
+msgid "Not in progress"
+msgstr "Pas en cours"
+
+#: skyeng_immo/sky_immo/maintenance.py:89
+msgid "Only the owner of the property can decide on this request."
+msgstr "Seul le propriétaire du bien peut décider de cette demande."
+
+#: skyeng_immo/sky_immo/maintenance.py:139
+msgid "Only the tenant who made this request can mark it as completed."
+msgstr "Seul le locataire qui a fait cette demande peut la marquer terminée."
+
+#: skyeng_immo/fixtures/custom_field.json:15
+msgid "Owner decision on a tenant maintenance request (Sky Immo app)."
+msgstr "Décision du propriétaire sur une demande d'intervention d'un locataire (application Sky Immo)."
+
+#: skyeng_immo/sky_immo/validation.py:19
+msgid "Owner missing"
+msgstr "Propriétaire manquant"
+
+#: skyeng_immo/sky_immo/api.py:722 skyeng_immo/sky_immo/api.py:729
+#: skyeng_immo/sky_immo/api.py:735 skyeng_immo/sky_immo/api.py:738
+#: skyeng_immo/sky_immo/api.py:743
+msgid "Photo refused"
+msgstr "Photo refusée"
+
+#: skyeng_immo/sky_immo/api.py:734
+#, python-brace-format
+msgid "Photo {0} could not be read. Please choose another one."
+msgstr "La photo {0} n'a pas pu être lue. Veuillez en choisir une autre."
+
+#: skyeng_immo/sky_immo/api.py:724
+#, python-brace-format
+msgid "Photo {0} is larger than {1} MB. Please choose a smaller one."
+msgstr "La photo {0} dépasse {1} Mo. Veuillez en choisir une plus petite."
+
+#: skyeng_immo/sky_immo/api.py:721 skyeng_immo/sky_immo/api.py:742
+#, python-brace-format
+msgid "Photo {0} is not an image. Only JPEG, PNG or WebP photos are accepted."
+msgstr "La photo {0} n'est pas une image. Seules les photos JPEG, PNG ou WebP sont acceptées."
+
+#: skyeng_immo/sky_immo/api.py:822
+msgid "Please choose the home concerned."
+msgstr "Veuillez choisir le logement concerné."
+
+#: skyeng_immo/sky_immo/api.py:805
+msgid "Please describe the problem."
+msgstr "Veuillez décrire le problème."
+
+#: skyeng_immo/sky_immo/validation.py:17
+#, python-brace-format
+msgid "Please set the owner (Unit Owner) of {0}, or of one of its parent properties. Use the company's own Customer when it owns the property."
+msgstr "Veuillez renseigner le propriétaire (Unit Owner) de {0}, ou de l'un de ses biens parents. Utilisez le Client de la société quand elle possède le bien."
+
+#: skyeng_immo/public/js/issue_sky_immo.js:25
+msgid "Reject"
+msgstr "Rejeter"
+
+#: skyeng_immo/public/js/issue_sky_immo.js:25
+msgid "Reject this request?"
+msgstr "Rejeter cette demande ?"
+
+#: skyeng_immo/fixtures/custom_field.json:9
+#: skyeng_immo/sky_immo/maintenance.py:96
+msgid "Rejected"
+msgstr ""
+
+#: skyeng_immo/sky_immo/validation.py:47
+#, python-brace-format
+msgid "Row {0}: {1} is paid by {2}, but the tenant of this lease is {3}."
+msgstr "Ligne {0} : {1} est payé par {2}, mais le locataire de ce bail est {3}."
+
+#: skyeng_immo/sky_immo/validation.py:38 skyeng_immo/sky_immo/validation.py:50
+msgid "Several customers on one lease"
+msgstr "Plusieurs clients sur un même bail"
+
+#: skyeng_immo/fixtures/custom_field.json:7
+msgid "Sky Immo status"
+msgstr "Statut Sky Immo"
+
+#: skyeng_immo/sky_immo/maintenance.py:87
+msgid "This request is no longer awaiting approval."
+msgstr "Cette demande n'est plus en attente d'approbation."
+
+#: skyeng_immo/sky_immo/api.py:774
+msgid "Too many photos"
+msgstr "Trop de photos"
+
+#: skyeng_immo/sky_immo/api.py:802
+msgid "Too many requests in one hour. Please call your property manager."
+msgstr "Trop de demandes en une heure. Veuillez appeler votre gestionnaire."
+
+#: skyeng_immo/sky_immo/maintenance.py:81
+msgid "Unknown decision."
+msgstr "Décision inconnue."
+
+#: skyeng_immo/sky_immo/maintenance.py:70
+#, python-brace-format
+msgid "Unknown maintenance status: {0}"
+msgstr "Statut d'intervention inconnu : {0}"
+
+#: skyeng_immo/sky_immo/api.py:609
+msgid "Unknown space."
+msgstr "Espace inconnu."
+
+#: skyeng_immo/sky_immo/api.py:136
+msgid "Unsupported language"
+msgstr "Langue non prise en charge"
+
+#: skyeng_immo/sky_immo/api.py:774
+#, python-brace-format
+msgid "You can add up to {0} photos."
+msgstr "Vous pouvez ajouter jusqu'à {0} photos."
+
+#: skyeng_immo/sky_immo/api.py:816
+msgid "You can only report a problem on a home you currently rent."
+msgstr "Vous ne pouvez signaler un problème que sur un logement que vous louez actuellement."
+
+#: skyeng_immo/sky_immo/api.py:61
+msgid "You do not have access to this page."
+msgstr "Vous n'avez pas accès à cette page."
+
+#: skyeng_immo/sky_immo/api.py:680
+msgid "You do not have access to this photo."
+msgstr "Vous n'avez pas accès à cette photo."
+
+#: skyeng_immo/sky_immo/maintenance.py:95
+#, python-brace-format
+msgid "{0} by {1} in Sky Immo."
+msgstr "{0} par {1} dans Sky Immo."

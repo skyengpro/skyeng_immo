@@ -64,6 +64,11 @@ def can_decide(issue_name: str, user: str | None = None) -> bool:
 	return is_linked_to(user, effective_owner(row.property_name))
 
 
+def _locked(issue_name: str, fields: list[str]) -> frappe._dict | None:
+	"""The request's `fields`, with its row locked (SELECT ... FOR UPDATE) until the commit."""
+	return frappe.db.get_value("Issue", issue_name, fields, as_dict=True, for_update=True)
+
+
 def set_status(issue_name: str, status: str) -> None:
 	"""Write the app status, then mirror it on the desk status, without a Website User save."""
 	if status not in STATUSES:
@@ -79,14 +84,13 @@ def decide(name: str, decision: str) -> dict:
 	"""Approve or reject a maintenance request. Called by the app and by the desk buttons."""
 	if decision not in DECISIONS:
 		frappe.throw(_("Unknown decision."))
-	if not frappe.db.exists("Issue", name):
-		frappe.throw(_("Not found"), frappe.DoesNotExistError)
-
-	status = frappe.db.get_value("Issue", name, "sky_immo_status")
-	if status != AWAITING:
-		frappe.throw(_("This request is no longer awaiting approval."), title=_("Already decided"))
-	if not can_decide(name):
+	# Locked until the commit: two decisions sent at once cannot both pass the status check.
+	row = _locked(name, ["property_name", "sky_immo_status"])
+	# Who first: anyone else gets the same answer, whether the request exists or what its status is.
+	if not row or not is_linked_to(frappe.session.user, effective_owner(row.property_name)):
 		frappe.throw(_("Only the owner of the property can decide on this request."), frappe.PermissionError)
+	if row.sky_immo_status != AWAITING:
+		frappe.throw(_("This request is no longer awaiting approval."), title=_("Already decided"))
 
 	new_status = DECISIONS[decision]
 	set_status(name, new_status)
@@ -130,11 +134,9 @@ def can_complete(issue_name: str, user: str | None = None) -> bool:
 @frappe.whitelist(methods=["POST"])
 def complete(name: str) -> dict:
 	"""The tenant marks their request as completed. It then shows as Resolved in the desk."""
-	row = frappe.db.get_value("Issue", name, ["raised_by", "sky_immo_status"], as_dict=True)
-	if not row:
-		frappe.throw(_("Not found"), frappe.DoesNotExistError)
+	row = _locked(name, ["raised_by", "sky_immo_status"])
 	user_email = (frappe.db.get_value("User", frappe.session.user, "email") or frappe.session.user).lower()
-	if (row.raised_by or "").lower() != user_email:
+	if not row or (row.raised_by or "").lower() != user_email:
 		frappe.throw(
 			_("Only the tenant who made this request can mark it as completed."), frappe.PermissionError
 		)

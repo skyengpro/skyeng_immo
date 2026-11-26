@@ -4,8 +4,10 @@ frappe.ui.form.on("Issue", {
 	async refresh(frm) {
 		if (frm.is_new() || frm.doc.sky_immo_status !== "Awaiting approval") return;
 
+		// desk_permissions is a read, allowed over GET only (frappe.call defaults to POST).
 		const { message } = await frappe.call({
 			method: "skyeng_immo.sky_immo.maintenance.desk_permissions",
+			type: "GET",
 			args: { name: frm.doc.name },
 		});
 		if (!message || !message.canDecide) return;

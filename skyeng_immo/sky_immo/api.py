@@ -22,6 +22,7 @@ from frappe.utils import (
 	escape_html,
 	flt,
 	get_first_day,
+	get_last_day,
 	getdate,
 	now_datetime,
 	strip_html,
@@ -166,7 +167,8 @@ def get_owner_dashboard() -> dict:
 
 	invoice_names = frappe.get_all("Sales Invoice", filters=_invoice_filters(scope), pluck="name")
 	collected = sum(
-		payment["amount"] for payment in data.payments_for(invoice_names, since=get_first_day(on))
+		payment["amount"]
+		for payment in data.payments_for(invoice_names, since=get_first_day(on), until=get_last_day(on))
 	)
 
 	first_name = frappe.db.get_value("User", scope.user, "first_name") or ""
@@ -607,7 +609,25 @@ def list_issues(space: str | None = None) -> list[dict]:
 	"""
 	if space not in (None, "owner", "tenant"):
 		frappe.throw(_("Unknown space."))
-	return _issues(_scope(space))
+	scope = _scope(space)
+	issues = _issues(scope)
+	if space != "tenant" and access.is_manager(scope.user):
+		_add_landlords(issues, scope)
+	return issues
+
+
+def _add_landlords(issues: list[dict], scope: Scope) -> None:
+	"""Staff over several landlords' properties: name the landlord of each request, to group by."""
+	props = data.get_properties(scope.owned_properties)
+	owners = {
+		issue["id"]: _owner_of(props.get(issue["property"]["id"]), props) if issue["property"] else None
+		for issue in issues
+	}
+	by_landlord = len(set(owners.values()) - {None}) > 1
+	names = data.customer_names(owners.values()) if by_landlord else {}
+	for issue in issues:
+		owner = owners[issue["id"]]
+		issue["landlord"] = {"id": owner, "name": names.get(owner, owner)} if by_landlord and owner else None
 
 
 @frappe.whitelist(methods=["GET"])
