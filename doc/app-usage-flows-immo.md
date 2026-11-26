@@ -18,6 +18,8 @@ In both modes, one app serves every role. The role of the signed-in person decid
 - the landlord sees the properties they own (`unit_owner`), with their units;
 - the tenant sees the units on their leases. A tenant can occupy more than one unit.
 
+A person who is both landlord and tenant gets both spaces and switches between them from the account menu.
+
 After sign-in, a landlord or a tenant opens the app. The property manager opens the app in mode B and the desk in mode A. In mode A, `/sky-immo` sends the property manager to the desk.
 
 Management happens in the desk: landlords, properties, leases, tenants, accounts and payments. The app has two actions, both about maintenance: the tenant creates a request and marks it completed, and the landlord approves or rejects it.
@@ -154,7 +156,7 @@ sequenceDiagram
     Note over D: Staff see every request in the desk, whatever its status.
 ```
 
-In mode B, when a property belongs to the customer itself, there is no landlord account. The property manager approves or rejects the request from the app.
+Only a user linked to the owner of the property decides: a portal user of the Customer set as `unit_owner` on the property or on its nearest parent. In mode B, the customer's own properties have the customer's own Customer as owner, so a property manager decides on them by being a portal user of that Customer.
 
 ## 4. Landlord (both modes)
 
@@ -203,7 +205,7 @@ sequenceDiagram
     A-->>G: Home: totals across all properties, including maintenance
     G->>A: Opens "My properties", "Tenants" or "Maintenance"
     A-->>G: Same lists as for the landlord, grouped by landlord when the customer manages for third parties
-    G->>A: Approves or rejects a request on one of the customer's own properties
+    G->>A: Approves or rejects a request on one of the customer's own properties (as a portal user of the customer's Customer)
     A->>D: Status updated
     Note over G,D: Anything else is changed in the desk, with the same account.
 ```
@@ -245,6 +247,6 @@ sequenceDiagram
 | ERPNext company             | A single one, Sky's, for every landlord | The customer's                                                                      |
 | Landlords                   | Every owner on the site                 | Third-party owners only, if any                                                     |
 | Property manager in the app | No                                      | Yes, over every property, grouped by landlord                                       |
-| Who approves maintenance    | The landlord                            | The third-party landlord, or the property manager for the customer's own properties |
+| Who approves maintenance    | The landlord                            | The user linked to the owner: the third-party landlord, or for the customer's own properties a property manager who is a portal user of the customer's Customer |
 | Landlord and tenant screens | Identical                               | Identical                                                                           |
 | Landing page of the property manager | The desk                       | The app                                                                             |
