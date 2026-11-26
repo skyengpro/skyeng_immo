@@ -217,6 +217,22 @@ class TestSkyImmo(IntegrationTestCase):
 		self.assertEqual(session["user"]["role"], "tenant")
 		self.assertTrue(session["csrfToken"])
 
+	def test_session_is_closed_to_guests(self):
+		self.assertNotIn(api.get_session, frappe.guest_methods)
+		self.as_user("Guest")
+		with self.assertRaises(frappe.PermissionError):
+			frappe.is_whitelisted(api.get_session)
+
+	def test_download_restores_the_print_permission_flag(self):
+		self.as_user(self.user_t1)
+		frappe.flags.ignore_print_permissions = None
+		try:
+			api.download("invoice", self.inv_late)
+		finally:
+			flag = frappe.flags.ignore_print_permissions
+			frappe.flags.ignore_print_permissions = None
+		self.assertIsNone(flag)
+
 	# ------------------------------------------------------------ landlords
 
 	def test_each_landlord_sees_only_their_properties(self):
@@ -420,12 +436,25 @@ class TestSkyImmo(IntegrationTestCase):
 		with self.assertRaises(frappe.ValidationError) as caught:
 			api.create_issue(description="x", photos=["data:text/html;base64,PGI+"])
 		self.assertIn("not an image", str(caught.exception))
+		# The content decides, not the type the browser claims.
+		fake = "data:image/png;base64," + base64.b64encode(b"<html><script>alert(1)</script></html>").decode()
+		truncated = (
+			"data:image/png;base64," + base64.b64encode(base64.b64decode(PIXEL.split(",")[1])[:30]).decode()
+		)
+		for photo in (fake, truncated):
+			with self.assertRaises(frappe.ValidationError) as caught:
+				api.create_issue(description="x", photos=[photo])
+			self.assertIn("not an image", str(caught.exception))
 		big = "data:image/png;base64," + base64.b64encode(b"\0" * (5 * 1024 * 1024 + 1)).decode()
 		with self.assertRaises(frappe.ValidationError) as caught:
 			api.create_issue(description="x", photos=[big])
 		self.assertIn("5 MB", str(caught.exception))
 		# nothing was written by the refused requests
 		self.assertFalse(frappe.db.exists("Issue", {"raised_by": "mi-tenant-1@example.com", "subject": "x"}))
+
+	def test_photo_is_saved_with_the_extension_of_its_content(self):
+		# A PNG sent as JPEG is accepted, and stored as what it is.
+		self.assertEqual(api._decode_photo(PIXEL.replace("image/png", "image/jpeg"))[1], "png")
 
 	def test_request_only_on_a_unit_of_an_active_lease(self):
 		self.as_user(self.user_t1)

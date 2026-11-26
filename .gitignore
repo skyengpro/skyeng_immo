@@ -19,6 +19,8 @@ venv/
 
 # Frontend dependencies and build output (rebuilt by `bench build`)
 node_modules/
+# Symlink bench creates to the app's node_modules (a link, so `node_modules/` does not match it).
+skyeng_immo/public/node_modules
 skyeng_immo/public/frontend/
 skyeng_immo/www/sky_immo.html
 

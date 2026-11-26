@@ -9,6 +9,7 @@ the tenant's maintenance request, plus their own language preference.
 import base64
 import binascii
 import html
+import io
 import json
 import re
 
@@ -25,6 +26,7 @@ from frappe.utils import (
 	strip_html,
 	today,
 )
+from PIL import Image
 
 from skyeng_immo import access
 from skyeng_immo.access import Scope
@@ -35,7 +37,10 @@ LANGUAGES = ("fr", "en")
 MAX_PHOTOS = 2
 MAX_PHOTO_BYTES = 5 * 1024 * 1024
 MAX_ISSUES_PER_HOUR = 10
-PHOTO_TYPES = {"image/jpeg": "jpg", "image/png": "png", "image/webp": "webp"}
+# Types a photo may declare in its data URL; its content is then checked (`_image_extension`).
+PHOTO_TYPES = frozenset({"image/jpeg", "image/png", "image/webp"})
+# Pillow's name of each accepted format, and the file extension the photo is saved with.
+PHOTO_FORMATS = {"JPEG": "jpg", "PNG": "png", "WEBP": "webp"}
 
 
 def _scope(side: str | None = None) -> Scope:
@@ -88,7 +93,7 @@ def _default_currency() -> str:
 # --------------------------------------------------------------------------- #
 
 
-@frappe.whitelist(allow_guest=True, methods=["GET"])
+@frappe.whitelist(methods=["GET"])
 def get_session() -> dict:
 	"""Who is signed in, their app space, and the CSRF token for later POSTs."""
 	user = frappe.session.user
@@ -407,6 +412,7 @@ def download(kind: str, name: str):
 	from frappe.translate import print_language
 
 	language = (frappe.db.get_value("User", scope.user, "language") or "fr")[:2]
+	previous = frappe.flags.ignore_print_permissions
 	frappe.flags.ignore_print_permissions = True
 	try:
 		with print_language(language):
@@ -419,10 +425,10 @@ def download(kind: str, name: str):
 				frappe.log_error(f"Sky Immo: PDF of {doctype} {name}, falling back to HTML")
 				from werkzeug.wrappers import Response
 
-				html = frappe.get_print(doctype, name)
-				return Response(html, mimetype="text/html")
+				page = frappe.get_print(doctype, name)
+				return Response(page, mimetype="text/html")
 	finally:
-		frappe.flags.ignore_print_permissions = False
+		frappe.flags.ignore_print_permissions = previous
 
 	frappe.local.response.filename = "{}.pdf".format(re.sub(r"[^\w.-]+", "-", name))
 	frappe.local.response.filecontent = pdf
@@ -631,6 +637,12 @@ def _decode_photo(photo: str, position: int = 1) -> tuple[bytes, str]:
 			_("Photo {0} is not an image. Only JPEG, PNG or WebP photos are accepted.").format(position),
 			title=_("Photo refused"),
 		)
+	too_large = _("Photo {0} is larger than {1} MB. Please choose a smaller one.").format(
+		position, MAX_PHOTO_BYTES // (1024 * 1024)
+	)
+	# Base64 is 4 characters per 3 bytes: refuse an oversized photo before decoding it.
+	if len(match.group(2)) > (MAX_PHOTO_BYTES + 2) // 3 * 4 + 4:
+		frappe.throw(too_large, title=_("Photo refused"))
 	try:
 		content = base64.b64decode(match.group(2), validate=True)
 	except (binascii.Error, ValueError):
@@ -639,13 +651,29 @@ def _decode_photo(photo: str, position: int = 1) -> tuple[bytes, str]:
 			title=_("Photo refused"),
 		)
 	if len(content) > MAX_PHOTO_BYTES:
+		frappe.throw(too_large, title=_("Photo refused"))
+	extension = _image_extension(content)
+	if not extension:
 		frappe.throw(
-			_("Photo {0} is larger than {1} MB. Please choose a smaller one.").format(
-				position, MAX_PHOTO_BYTES // (1024 * 1024)
-			),
+			_("Photo {0} is not an image. Only JPEG, PNG or WebP photos are accepted.").format(position),
 			title=_("Photo refused"),
 		)
-	return content, PHOTO_TYPES[match.group(1)]
+	return content, extension
+
+
+def _image_extension(content: bytes) -> str | None:
+	"""File extension of a JPEG, PNG or WebP image, read from its content; None for anything else.
+
+	The data URL's type is only what the browser claims: the bytes decide.
+	"""
+	try:
+		with Image.open(io.BytesIO(content)) as image:
+			image_format = image.format
+			image.verify()
+	except Exception:
+		# Pillow raises many types on corrupt or hostile input (incl. DecompressionBombError).
+		return None
+	return PHOTO_FORMATS.get(image_format)
 
 
 def _photo_list(photos, photo) -> list[str]:
