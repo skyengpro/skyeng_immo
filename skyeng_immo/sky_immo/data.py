@@ -102,6 +102,7 @@ PROPERTY_FIELDS = [
 	"furnished",
 	"rent",
 	"lft",
+	"rgt",
 ]
 
 

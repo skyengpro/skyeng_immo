@@ -12,6 +12,7 @@ const routes = [
   { path: '/proprietaire', name: 'owner-home', component: () => import('./pages/owner/Home.vue'), meta: owner },
   { path: '/proprietaire/biens', name: 'properties', component: () => import('./pages/owner/Properties.vue'), meta: owner },
   { path: '/proprietaire/biens/:id', name: 'property', component: () => import('./pages/owner/Property.vue'), props: true, meta: owner },
+  { path: '/proprietaire/locataires', name: 'tenants', component: () => import('./pages/owner/Tenants.vue'), meta: owner },
   { path: '/proprietaire/baux/:id', name: 'owner-lease', component: () => import('./pages/Lease.vue'), props: true, meta: owner },
   { path: '/proprietaire/factures/:id', name: 'owner-invoice', component: () => import('./pages/Invoice.vue'), props: true, meta: owner },
   { path: '/proprietaire/maintenance', name: 'owner-issues', component: () => import('./pages/Issues.vue'), meta: owner },

@@ -142,9 +142,46 @@ class TestAppEndpoints(IntegrationTestCase):
 				invoice_ids(), self.expected["landlord1"]["invoices"] | self.expected["tenant2"]["invoices"]
 			)
 
+	def test_tenants_screen_lists_current_and_former_tenants_of_own_properties(self):
+		s, c = self.site, self.site.customers
+		with self.set_user(s.users["landlord1"]):
+			rows = {row["id"]: row for row in api.list_tenants()["tenants"]}
+		# Tenant 2 left unit 1A; their current home (2A, landlord 2) is not landlord 1's business.
+		self.assertEqual(set(rows), {c["Tenant 1"], c["Tenant 2"]})
+		self.assertTrue(rows[c["Tenant 1"]]["current"])
+		self.assertEqual(rows[c["Tenant 1"]]["leaseId"], s.lease_1a)
+		self.assertFalse(rows[c["Tenant 2"]]["current"])
+		self.assertEqual(rows[c["Tenant 2"]]["leaseId"], s.lease_old)
+		self.assertEqual([unit["id"] for unit in rows[c["Tenant 2"]]["units"]], [s.unit1a])
+
+		with self.set_user(s.users["landlord2"]):
+			listing = api.list_tenants()
+		# The draft lease on 1B never ran: no tenant for it.
+		self.assertEqual({row["id"] for row in listing["tenants"]}, {c["Tenant 2"]})
+		self.assertFalse(listing["byLandlord"])
+
+	def test_manager_sees_tenants_grouped_by_landlord(self):
+		with self.set_user(self.site.users["manager"]):
+			listing = api.list_tenants()
+		self.assertTrue(listing["byLandlord"])
+		mine = [row for row in listing["tenants"] if row["id"] in self.site.customers.values()]
+		self.assertTrue(mine)
+		self.assertTrue(all(row["landlord"] for row in mine))
+
+	def test_property_screen_lists_its_requests_and_its_units(self):
+		s = self.site
+		with self.set_user(s.users["landlord1"]):
+			unit = {row["id"] for row in api.get_property(s.unit1a)["issues"]}
+			building = {row["id"] for row in api.get_property(s.building1)["issues"]}
+		self.assertEqual(unit, {s.issue_1a, s.issue_1a_old})
+		# Unit 1B sits in building 1 but is landlord 2's: its request stays out.
+		self.assertEqual(building, {s.issue_1a, s.issue_1a_old})
+		with self.set_user(s.users["landlord2"]):
+			self.assertEqual({row["id"] for row in api.get_property(s.unit1b)["issues"]}, {s.issue_1b})
+
 	def test_screens_of_the_other_side_are_refused(self):
 		with self.set_user(self.site.users["tenant1"]):
-			for endpoint in (api.get_owner_dashboard, api.list_properties):
+			for endpoint in (api.get_owner_dashboard, api.list_properties, api.list_tenants):
 				self.assert_refused(endpoint)
 		with self.set_user(self.site.users["landlord1"]):
 			for endpoint in (api.get_tenant_home, api.list_my_leases):

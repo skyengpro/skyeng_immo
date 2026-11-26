@@ -17,7 +17,7 @@
     <template v-else>
       <div class="grid grid-cols-2 gap-3 md:gap-4 lg:grid-cols-4">
         <StatCard :label="t('Properties')" :value="num(data.stats.properties)" icon="lucide-building-2" to="/proprietaire/biens" />
-        <StatCard :label="t('Tenants')" :value="num(data.stats.tenants)" icon="lucide-users-round" />
+        <StatCard :label="t('Tenants')" :value="num(data.stats.tenants)" icon="lucide-users-round" to="/proprietaire/locataires" />
         <StatCard :label="t('Received this month')" :value="money(data.stats.collectedThisMonth)" icon="lucide-wallet" tone="ok" small />
         <StatCard :label="t('Still to collect')" :value="money(data.stats.unpaidTotal)" icon="lucide-circle-alert" small
           :tone="data.stats.unpaidTotal ? 'red' : 'ok'" :hint-tone="data.stats.unpaidTotal ? 'red' : null"
@@ -49,6 +49,16 @@
               <span class="lucide-circle-check size-4 text-ok" />{{ t('No repair waits for you.') }}
             </p>
             <IssueList v-else :issues="awaiting.slice(0, 4)" base="/proprietaire" show-tenant class="!rounded-none !border-0 !shadow-none" />
+          </Panel>
+
+          <Panel :title="t('Repairs in progress')" :count="inProgress.length || null">
+            <template v-if="inProgress.length" #actions>
+              <RouterLink to="/proprietaire/maintenance" class="text-[12.5px] font-semibold text-sky-mid hover:underline">{{ t('See all') }}</RouterLink>
+            </template>
+            <p v-if="!inProgress.length" class="flex items-center gap-2 px-5 pb-5 text-[13.5px] text-ink-mute">
+              <span class="lucide-circle-check size-4 text-ok" />{{ t('No repair in progress.') }}
+            </p>
+            <IssueList v-else :issues="inProgress.slice(0, 4)" base="/proprietaire" show-tenant class="!rounded-none !border-0 !shadow-none" />
           </Panel>
 
           <Panel v-if="occupancy.total" :title="t('Occupancy')" padded>
@@ -94,6 +104,7 @@ const { data, error, reload } = useLoad('get_owner_dashboard')
 const units = ref([])
 get('list_properties').then((list) => (units.value = list.sections.flatMap((s) => s.groups.flatMap((g) => g.units)))).catch(() => {})
 const awaiting = computed(() => attention.issues.filter((i) => i.approval === 'awaiting_approval'))
+const inProgress = computed(() => attention.issues.filter((i) => i.approval === 'in_progress'))
 const letLabel = computed(() => t(occupancy.value.let === 1 ? '{0} unit let out of {1}' : '{0} units let out of {1}', occupancy.value.let, occupancy.value.total))
 const occupancy = computed(() => {
   const total = units.value.length

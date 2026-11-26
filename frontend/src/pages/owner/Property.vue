@@ -45,6 +45,12 @@
         </section>
 
         <section>
+          <h2 class="mb-3 font-display text-[22px] text-ink">{{ t('Repairs') }}</h2>
+          <IssueList v-if="data.issues.length" :issues="data.issues" base="/proprietaire" show-tenant />
+          <p v-else class="surface px-5 py-6 text-center text-[14px] text-ink-mute">{{ t('No repair request on this property.') }}</p>
+        </section>
+
+        <section>
           <h2 class="mb-3 font-display text-[22px] text-ink">{{ t('Past leases') }}</h2>
           <p v-if="!data.pastLeases.length" class="surface px-5 py-6 text-center text-[14px] text-ink-mute">{{ t('No past lease for this property.') }}</p>
           <ul v-else class="stagger surface divide-y divide-line overflow-hidden">
@@ -64,6 +70,7 @@
 import { computed, ref } from 'vue'
 import PageHeader from '@/components/PageHeader.vue'
 import Panel from '@/components/Panel.vue'
+import IssueList from '@/components/IssueList.vue'
 import Facts from '@/components/Facts.vue'
 import Row from '@/components/Row.vue'
 import Btn from '@/components/Btn.vue'

@@ -1,7 +1,9 @@
 // Navigation of each space. `short` is the phone tab bar label; `exact` lights the item only on its own page.
 export const ownerNav = [
   { to: '/proprietaire', label: 'Home', short: 'Home', icon: 'lucide-layout-grid', exact: true },
-  { to: '/proprietaire/biens', label: 'My properties', short: 'Properties', icon: 'lucide-building-2', also: ['/proprietaire/baux', '/proprietaire/factures'] },
+  { to: '/proprietaire/biens', label: 'My properties', short: 'Properties', icon: 'lucide-building-2', also: ['/proprietaire/factures'] },
+  // A tenant's page is their lease (/proprietaire/baux/<lease>).
+  { to: '/proprietaire/locataires', label: 'Tenants', short: 'Tenants', icon: 'lucide-users-round', also: ['/proprietaire/baux'] },
   { to: '/proprietaire/maintenance', label: 'Repairs', short: 'Repairs', icon: 'lucide-wrench', badge: 'awaiting' },
   { to: '/proprietaire/compte', label: 'My account', short: 'Account', icon: 'lucide-user-round' },
 ]

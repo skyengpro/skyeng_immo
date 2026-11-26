@@ -12,6 +12,7 @@ import html
 import io
 import json
 import re
+from dataclasses import replace
 
 import frappe
 from frappe import _
@@ -200,6 +201,17 @@ def _property_summary(prop, current_lease, items, tenants, on) -> dict:
 	}
 
 
+def _owner_of(prop, props: dict) -> str | None:
+	"""Effective owner of a property (its own, or its nearest parent's) among the loaded `props`."""
+	seen: set[str] = set()
+	while prop is not None and prop.name not in seen:
+		seen.add(prop.name)
+		if prop.unit_owner:
+			return prop.unit_owner
+		prop = props.get(prop.parent_property)
+	return None
+
+
 @frappe.whitelist(methods=["GET"])
 def list_properties() -> dict:
 	"""Units of the scope, grouped by building; for staff, by landlord first."""
@@ -211,11 +223,7 @@ def list_properties() -> dict:
 	tenants = data.customer_names([lease.customer for lease in current.values()])
 
 	def owner_of(prop):
-		while prop is not None:
-			if prop.unit_owner:
-				return prop.unit_owner
-			prop = props.get(prop.parent_property)
-		return None
+		return _owner_of(prop, props)
 
 	units = [prop for prop in props.values() if not prop.is_group]
 	owners = data.customer_names(owner_of(unit) for unit in units)
@@ -278,6 +286,15 @@ def get_property(name: str) -> dict:
 	)
 	by_id = {invoice["id"]: invoice for invoice in invoices}
 
+	# Requests on this property, and for a building on its units in scope.
+	covered = {name}
+	if prop.is_group:
+		covered.update(
+			frappe.get_all("Property", filters={"lft": [">", prop.lft], "rgt": ["<", prop.rgt]}, pluck="name")
+		)
+	on_property = replace(scope, owned_properties=scope.owned_properties & covered)
+	issues = [data.issue_summary(row, props) for row in access.get_issues(on_property, data.ISSUE_FIELDS)]
+
 	current_detail = None
 	if current:
 		current_items = items.get(current.name, [])
@@ -300,12 +317,60 @@ def get_property(name: str) -> dict:
 		},
 		"currentLease": current_detail,
 		"invoices": invoices,
+		"issues": issues,
 		"pastLeases": [
 			data.lease_summary(lease, items.get(lease.name, []), tenants, props, on)
 			for lease in leases
 			if not current or lease.name != current.name
 		],
 	}
+
+
+@frappe.whitelist(methods=["GET"])
+def list_tenants() -> dict:
+	"""Every tenant of the user's properties, current or former (screen B4), with their unit.
+
+	One row per tenant: their current lease if they have one, else their latest. For staff
+	managing several landlords' properties, each row also names the landlord.
+	"""
+	scope = _scope("owner")
+	on = getdate(today())
+	props, leases, _lease_property = _context(scope)  # newest lease first
+	names = data.customer_names(lease.customer for lease in leases)
+
+	rows: dict[str, dict] = {}
+	for lease in leases:
+		if not lease.customer or not lease.property:
+			continue
+		current = data.is_current(lease, on)
+		row = rows.get(lease.customer)
+		if row is None or (current and not row["current"]):
+			rows[lease.customer] = row = {
+				"id": lease.customer,
+				"name": names.get(lease.customer, lease.customer),
+				"current": current,
+				"leaseId": lease.name,
+				"units": [],
+				"startDate": data.iso(lease.start_date),
+				"endDate": data.iso(lease.end_date),
+				"owner": _owner_of(props.get(lease.property), props),
+			}
+		if current == row["current"]:
+			unit = data.ref_for(lease.property, props)
+			if unit not in row["units"]:
+				row["units"].append(unit)
+
+	owners = {row["owner"] for row in rows.values()}
+	by_landlord = access.is_manager(scope.user) and len(owners) > 1
+	owner_names = data.customer_names(owners) if by_landlord else {}
+	tenants = []
+	for row in sorted(rows.values(), key=lambda row: (not row["current"], row["name"].lower())):
+		owner = row.pop("owner")
+		row["landlord"] = (
+			{"id": owner, "name": owner_names.get(owner, owner)} if by_landlord and owner else None
+		)
+		tenants.append(row)
+	return {"byLandlord": by_landlord, "tenants": tenants}
 
 
 # --------------------------------------------------------------------------- #
