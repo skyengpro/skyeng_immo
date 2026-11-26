@@ -19,6 +19,7 @@
             <Btn v-if="data.tenantEmail" block icon="lucide-mail" :label="data.tenantEmail" :href="`mailto:${data.tenantEmail}`" />
           </div>
         </Panel>
+        <PropertyFacts v-if="!isOwner && data.features" :features="data.features" :building-name="data.buildingName" />
         <LeaseTerms :lease="data" />
       </aside>
 
@@ -56,6 +57,7 @@ import Panel from '@/components/Panel.vue'
 import Btn from '@/components/Btn.vue'
 import Initials from '@/components/Initials.vue'
 import LeaseTerms from '@/components/LeaseTerms.vue'
+import PropertyFacts from '@/components/PropertyFacts.vue'
 import ScheduleList from '@/components/ScheduleList.vue'
 import InvoiceList from '@/components/InvoiceList.vue'
 import PaymentList from '@/components/PaymentList.vue'

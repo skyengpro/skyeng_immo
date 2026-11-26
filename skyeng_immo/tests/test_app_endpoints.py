@@ -136,6 +136,12 @@ class TestAppEndpoints(IntegrationTestCase):
 			# Landlord screens: landlord 1's units only, not the unit rented as tenant 2.
 			self.assertEqual(unit_ids(api.list_properties()), {s.unit1a})
 			self.assert_refused(api.get_property, s.unit2a)
+			self.assertEqual(
+				{row["id"] for row in api.list_issues("owner")}, self.expected["landlord1"]["issues"]
+			)
+			self.assertEqual(
+				{row["id"] for row in api.list_issues("tenant")}, self.expected["tenant2"]["issues"]
+			)
 			# Tenant screens: tenant 2's leases only.
 			self.assertEqual({row["id"] for row in api.list_my_leases()}, self.expected["tenant2"]["leases"])
 			self.assertEqual(
@@ -178,6 +184,29 @@ class TestAppEndpoints(IntegrationTestCase):
 		self.assertEqual(building, {s.issue_1a, s.issue_1a_old})
 		with self.set_user(s.users["landlord2"]):
 			self.assertEqual({row["id"] for row in api.get_property(s.unit1b)["issues"]}, {s.issue_1b})
+
+	def test_session_offers_the_spaces_of_the_roles_held(self):
+		s = self.site
+		both = make_user("_test_immo_both_spaces@example.com", ["Landlord", "Tenant"])
+		cases = {
+			s.users["landlord1"]: ["owner"],
+			s.users["tenant1"]: ["tenant"],
+			s.users["manager"]: ["owner"],
+			both: ["owner", "tenant"],
+		}
+		for user, spaces in cases.items():
+			with self.subTest(user=user), self.set_user(user):
+				self.assertEqual(api.get_session()["user"]["spaces"], spaces)
+
+	def test_tenant_lease_screen_shows_the_unit_and_the_rent(self):
+		s = self.site
+		with self.set_user(s.users["tenant2"]):
+			lease = api.get_lease(s.lease_2a)
+			listed = {row["id"]: row for row in api.list_my_leases()}
+		self.assertEqual(lease["buildingName"], s.floor2)
+		self.assertEqual(set(lease["features"]), {"type", "bedrooms", "bathrooms", "area", "furnished"})
+		self.assertGreater(listed[s.lease_2a]["amountPerPeriod"], 0)
+		self.assertEqual(listed[s.lease_2a]["frequency"], "monthly")
 
 	def test_screens_of_the_other_side_are_refused(self):
 		with self.set_user(self.site.users["tenant1"]):

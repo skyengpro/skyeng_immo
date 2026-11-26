@@ -8,9 +8,7 @@
     <Skeleton v-else-if="!data" :rows="3" tall />
     <div v-else class="grid grid-cols-[minmax(0,1fr)] gap-4 md:grid-cols-[minmax(0,1fr)_320px] md:items-start md:gap-5 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-6">
       <aside class="space-y-4 md:order-2 md:sticky md:top-20">
-        <Panel :title="t('The property')" padded>
-          <Facts :items="features" />
-        </Panel>
+        <PropertyFacts :features="data.features" :building-name="data.buildingName" />
         <LeaseTerms v-if="data.currentLease" :lease="data.currentLease" :title="t('Current lease')">
           <div class="mt-4 rounded-[14px] bg-paper-deep/70 p-4">
             <p class="eyebrow mb-2">{{ t('Tenant') }}</p>
@@ -71,7 +69,7 @@ import { computed, ref } from 'vue'
 import PageHeader from '@/components/PageHeader.vue'
 import Panel from '@/components/Panel.vue'
 import IssueList from '@/components/IssueList.vue'
-import Facts from '@/components/Facts.vue'
+import PropertyFacts from '@/components/PropertyFacts.vue'
 import Row from '@/components/Row.vue'
 import Btn from '@/components/Btn.vue'
 import Chips from '@/components/Chips.vue'
@@ -84,7 +82,7 @@ import ErrorState from '@/components/ErrorState.vue'
 import Skeleton from '@/components/Skeleton.vue'
 import { useLoad } from '@/load'
 import { t } from '@/i18n'
-import { date, num } from '@/format'
+import { date } from '@/format'
 
 const props = defineProps({ id: String })
 const { data, error, reload } = useLoad('get_property', () => ({ name: props.id }))
@@ -93,15 +91,4 @@ const tab = ref('due')
 const due = computed(() => (data.value?.invoices || []).filter((i) => i.outstanding > 0))
 const paid = computed(() => (data.value?.invoices || []).filter((i) => i.outstanding <= 0))
 const rows = computed(() => (tab.value === 'due' ? due.value : paid.value))
-const features = computed(() => {
-  const f = data.value.features
-  return [
-    ...(data.value.buildingName ? [{ label: t('Building'), value: data.value.buildingName }] : []),
-    ...(f.type ? [{ label: t('Type'), value: f.type }] : []),
-    ...(f.bedrooms ? [{ label: t('Bedrooms'), value: num(f.bedrooms) }] : []),
-    ...(f.bathrooms ? [{ label: t('Bathrooms'), value: num(f.bathrooms) }] : []),
-    ...(f.area ? [{ label: t('Area'), value: `${num(f.area)} m²` }] : []),
-    { label: t('Furnished'), value: f.furnished ? t('Yes') : t('No') },
-  ]
-})
 </script>

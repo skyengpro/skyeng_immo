@@ -9,7 +9,10 @@
         <template #lead><span class="flex size-10 shrink-0 items-center justify-center rounded-full bg-sky-soft"><span class="lucide-house size-[18px] text-sky-mid" /></span></template>
         <p class="truncate text-[15px] font-semibold text-ink">{{ l.property.displayName }}</p>
         <p class="text-[12.5px] text-ink-mute">{{ l.endDate ? t('{0} to {1}', date(l.startDate), date(l.endDate)) : date(l.startDate) }}</p>
-        <template #end><StatusBadge kind="lease" :status="l.status" /></template>
+        <template #end>
+          <span v-if="l.amountPerPeriod > 0" class="whitespace-nowrap text-[14px] font-semibold text-ink tabular">{{ perPeriod(l.amountPerPeriod, l.frequency) }}</span>
+          <StatusBadge kind="lease" :status="l.status" />
+        </template>
       </Row>
     </ul>
   </div>
@@ -26,7 +29,7 @@ import ErrorState from '@/components/ErrorState.vue'
 import Skeleton from '@/components/Skeleton.vue'
 import { useLoad } from '@/load'
 import { t } from '@/i18n'
-import { date } from '@/format'
+import { date, perPeriod } from '@/format'
 
 const router = useRouter()
 const { data, error, reload } = useLoad('list_my_leases')

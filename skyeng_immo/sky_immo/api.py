@@ -109,11 +109,18 @@ def get_session() -> dict:
 		result["noAccess"] = True
 		return result
 
+	roles = frappe.get_roles(user)
+	# Screens the user may open; someone both landlord and tenant switches between the two.
+	spaces = [
+		*(["owner"] if role == "manager" or access.LANDLORD in roles else []),
+		*(["tenant"] if access.TENANT in roles else []),
+	]
 	info = frappe.db.get_value("User", user, ["first_name", "full_name", "email", "language"], as_dict=True)
 	language = (info.language or "")[:2]
 	result["user"] = {
 		"id": user,
 		"role": role,
+		"spaces": spaces,
 		"firstName": info.first_name or info.full_name or user,
 		"fullName": info.full_name or user,
 		"email": info.email or user,
@@ -259,6 +266,17 @@ def list_properties() -> dict:
 	return {"byLandlord": by_landlord, "sections": result}
 
 
+def _features(prop) -> dict:
+	"""What the unit is like, for the landlord's property screen and the tenant's lease screen."""
+	return {
+		"type": prop.type,
+		"bedrooms": prop.bedroom or 0,
+		"bathrooms": prop.common_bathroom or 0,
+		"area": flt(prop.builtup_area),
+		"furnished": bool(prop.furnished),
+	}
+
+
 @frappe.whitelist(methods=["GET"])
 def get_property(name: str) -> dict:
 	scope = _scope("owner")
@@ -308,13 +326,7 @@ def get_property(name: str) -> dict:
 		**_property_summary(prop, current, items.get(current.name, []) if current else [], tenants, on),
 		"buildingName": prop.parent_property,
 		"isBuilding": bool(prop.is_group),
-		"features": {
-			"type": prop.type,
-			"bedrooms": prop.bedroom or 0,
-			"bathrooms": prop.common_bathroom or 0,
-			"area": flt(prop.builtup_area),
-			"furnished": bool(prop.furnished),
-		},
+		"features": _features(prop),
 		"currentLease": current_detail,
 		"invoices": invoices,
 		"issues": issues,
@@ -411,6 +423,8 @@ def get_lease(name: str) -> dict:
 		"tenantEmail": tenant_contact.get("email_id"),
 		"tenantPhone": tenant_contact.get("mobile_no"),
 		"noticeDays": lease.notice_period or 0,
+		"buildingName": prop.parent_property if prop else None,
+		"features": _features(prop) if prop else None,
 		"deposit": data.deposit(lease),
 		"lines": [
 			{"label": labels.get(item.lease_item, item.lease_item), "amount": flt(item.amount) * months}
@@ -586,9 +600,14 @@ def list_my_leases() -> list[dict]:
 
 
 @frappe.whitelist(methods=["GET"])
-def list_issues() -> list[dict]:
-	"""Tenant: own requests. Landlord and manager: requests on their properties."""
-	return _issues(_scope())
+def list_issues(space: str | None = None) -> list[dict]:
+	"""Tenant: own requests. Landlord and manager: requests on their properties.
+
+	`space` ("owner" or "tenant") keeps one side, for someone who is both landlord and tenant.
+	"""
+	if space not in (None, "owner", "tenant"):
+		frappe.throw(_("Unknown space."))
+	return _issues(_scope(space))
 
 
 @frappe.whitelist(methods=["GET"])

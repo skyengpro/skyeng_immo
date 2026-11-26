@@ -2,22 +2,46 @@ import { reactive } from 'vue'
 import { get, net, clearCache } from './api'
 import { hasSavedLanguage, setLanguage } from './i18n'
 
+const SPACE_KEY = 'sky_immo.space'
+
 export const session = reactive({
   ready: false,
-  /** { id, role: 'manager' | 'owner' | 'tenant', firstName, fullName, email, language } */
+  /** { id, role: 'manager' | 'owner' | 'tenant', spaces: ['owner' | 'tenant'], firstName, fullName, email, language } */
   user: null,
   noAccess: false,
   currency: 'XAF',
+  /** The screens shown: 'owner' (landlords, and staff over every property) or 'tenant'. */
+  space: null,
 })
 
-/** Staff use the landlord screens, over every property. */
-export const space = (user = session.user) => (user?.role === 'tenant' ? 'tenant' : 'owner')
-export const home = (user = session.user) => (space(user) === 'tenant' ? '/locataire' : '/proprietaire')
+/** The spaces the signed-in user may open; both for someone who is landlord and tenant. */
+export const spaces = () => session.user?.spaces || []
+export const space = () => session.space
+export const home = () => (space() === 'tenant' ? '/locataire' : '/proprietaire')
+
+// The space chosen last on this device, if the user still has it; else the first one (landlord).
+function pickSpace(user) {
+  const offered = user?.spaces || []
+  let saved = null
+  try {
+    saved = localStorage.getItem(SPACE_KEY)
+  } catch {}
+  return offered.includes(saved) ? saved : offered[0] || null
+}
+
+/** Open the other space. A full load, so every screen and cached read starts from that space. */
+export function switchSpace(target) {
+  if (target === space() || !spaces().includes(target)) return
+  try {
+    localStorage.setItem(SPACE_KEY, target)
+  } catch {}
+  window.location.href = `/sky-immo${target === 'tenant' ? '/locataire' : '/proprietaire'}`
+}
 
 export async function loadSession() {
   try {
     const s = await get('get_session')
-    Object.assign(session, { user: s.user, noAccess: !!s.noAccess, currency: s.currency || 'XAF' })
+    Object.assign(session, { user: s.user, noAccess: !!s.noAccess, currency: s.currency || 'XAF', space: pickSpace(s.user) })
     net.csrf = s.csrfToken
     if (s.user?.language && !hasSavedLanguage()) setLanguage(s.user.language, { remember: false })
   } catch {

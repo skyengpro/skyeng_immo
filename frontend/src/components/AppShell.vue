@@ -108,7 +108,7 @@ import InstallBanner from './InstallBanner.vue'
 import { post } from '@/api'
 import { lang, setLanguage, t } from '@/i18n'
 import { isDark, setTheme } from '@/theme'
-import { session, logout, space, home } from '@/session'
+import { session, logout, space, spaces, home, switchSpace } from '@/session'
 import { ownerNav, tenantNav, isActive } from '@/nav'
 import { loadAttention, awaitingCount } from '@/attention'
 
@@ -116,7 +116,8 @@ const route = useRoute()
 loadAttention()
 const badge = (item) => (item.badge === 'awaiting' ? awaitingCount() : 0)
 const items = computed(() => (space() === 'tenant' ? tenantNav : ownerNav))
-const roleLabel = computed(() => ({ manager: 'Property manager', owner: 'Landlord', tenant: 'Tenant' })[session.user.role])
+// The open space decides: someone both landlord and tenant reads "Tenant" in their tenant space.
+const roleLabel = computed(() => (space() === 'tenant' ? 'Tenant' : session.user.role === 'manager' ? 'Property manager' : 'Landlord'))
 const spaceLabel = computed(() => (space() === 'tenant' ? 'Tenant space' : 'Landlord space'))
 
 const tablet = useMediaQuery('(min-width: 768px) and (max-width: 1023px)')
@@ -144,8 +145,12 @@ function changeLanguage(l) {
   post('set_language', { lang: l }).catch(() => {})
 }
 
+const otherSpace = computed(() => spaces().find((s) => s !== space()))
 const userMenu = computed(() => [
   { label: t('My account'), icon: 'lucide-user-round', route: { path: `${home()}/compte` } },
+  ...(otherSpace.value
+    ? [{ label: otherSpace.value === 'tenant' ? t('Open my tenant space') : t('Open my landlord space'), icon: 'lucide-arrow-left-right', onClick: () => switchSpace(otherSpace.value) }]
+    : []),
   { label: isDark.value ? t('Light theme') : t('Dark theme'), icon: isDark.value ? 'lucide-sun' : 'lucide-moon', onClick: () => setTheme(isDark.value ? 'light' : 'dark') },
   { label: lang.value === 'fr' ? 'English' : 'Français', icon: 'lucide-languages', onClick: () => changeLanguage(lang.value === 'fr' ? 'en' : 'fr') },
   { label: t('Sign out'), icon: 'lucide-log-out', theme: 'red', onClick: logout },

@@ -39,7 +39,7 @@ import { space } from '@/session'
 
 const isOwner = space() === 'owner'
 const base = isOwner ? '/proprietaire' : '/locataire'
-const { data, error, reload } = useLoad('list_issues')
+const { data, error, reload } = useLoad('list_issues', () => ({ space: space() }))
 const filter = ref('all')
 const STATES = [['awaiting_approval', 'Awaiting approval'], ['in_progress', 'In progress'], ['completed', 'Completed'], ['rejected', 'Rejected']]
 const count = (v) => (v === 'all' ? data.value.length : data.value.filter((i) => i.approval === v).length)

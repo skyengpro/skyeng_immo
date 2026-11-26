@@ -9,7 +9,7 @@ export const attention = reactive({ issues: [], loaded: false })
 export async function loadAttention() {
   if (space() !== 'owner') return
   try {
-    attention.issues = await get('list_issues')
+    attention.issues = await get('list_issues', { space: 'owner' })
   } catch {}
   attention.loaded = true
 }

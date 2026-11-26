@@ -13,6 +13,14 @@
         <Facts :items="[{ label: t('Email'), value: session.user.email }, { label: t('Space'), value: t(roleLabel) }]" />
       </Panel>
 
+      <Panel v-if="spaces().length > 1" :title="t('Space')" padded class="md:col-span-2">
+        <div class="flex items-center rounded-full border border-line bg-paper p-0.5" role="group" :aria-label="t('Space')">
+          <button v-for="o in [['owner', 'Landlord'], ['tenant', 'Tenant']]" :key="o[0]" class="flex-1 rounded-full py-2 text-[13.5px] font-semibold transition"
+            :class="space() === o[0] ? 'bg-ink text-on-ink' : 'text-ink-mute hover:text-ink'" :aria-pressed="space() === o[0]" @click="switchSpace(o[0])">{{ t(o[1]) }}</button>
+        </div>
+        <p class="mt-3 text-[12.5px] text-ink-mute">{{ t('You are both landlord and tenant: switch between your properties and your own lease.') }}</p>
+      </Panel>
+
       <Panel :title="t('Language')" padded>
         <div class="flex items-center rounded-full border border-line bg-paper p-0.5" role="group" :aria-label="t('Language')">
           <button v-for="o in [['fr', 'Français'], ['en', 'English']]" :key="o[0]" class="flex-1 rounded-full py-2 text-[13.5px] font-semibold transition"
@@ -51,9 +59,10 @@ import Initials from '@/components/Initials.vue'
 import { post } from '@/api'
 import { lang, setLanguage, t } from '@/i18n'
 import { setTheme, themeMode } from '@/theme'
-import { session, logout } from '@/session'
+import { session, logout, space, spaces, switchSpace } from '@/session'
 
-const roleLabel = computed(() => ({ manager: 'Property manager', owner: 'Landlord', tenant: 'Tenant' })[session.user.role])
+// The open space decides: someone both landlord and tenant reads "Tenant" in their tenant space.
+const roleLabel = computed(() => (space() === 'tenant' ? 'Tenant' : session.user.role === 'manager' ? 'Property manager' : 'Landlord'))
 const modes = [['light', 'Light', 'lucide-sun'], ['system', 'Auto', 'lucide-monitor-smartphone'], ['dark', 'Dark', 'lucide-moon']]
 function change(l) {
   setLanguage(l)
