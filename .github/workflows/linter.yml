@@ -9,6 +9,8 @@ on:
 permissions:
   contents: read
   pull-requests: read
+  # Pull the private org CI image from GHCR (container.credentials in each job).
+  packages: read
 
 concurrency:
   group: linter-${{ github.workflow }}-${{ github.head_ref || github.ref }}
@@ -17,9 +19,13 @@ concurrency:
 jobs:
   pre-commit:
     name: Pre-commit (hygiene, ruff)
-    runs-on: org-ci-nano
+    runs-on: ubuntu-latest
     container:
       image: ghcr.io/skyengpro/runner-provisioner/org-ci-runner@sha256:c33d5d2d6fe44e3d2017e73fd6c4dccff3d45ec1f3389268744e7feb7b7f7a7c
+      # The org CI image is private; a GitHub-hosted runner pulls it with the workflow token.
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
@@ -42,9 +48,13 @@ jobs:
 
   packaging:
     name: Packaging guard
-    runs-on: org-ci-nano
+    runs-on: ubuntu-latest
     container:
       image: ghcr.io/skyengpro/runner-provisioner/org-ci-runner@sha256:c33d5d2d6fe44e3d2017e73fd6c4dccff3d45ec1f3389268744e7feb7b7f7a7c
+      # The org CI image is private; a GitHub-hosted runner pulls it with the workflow token.
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
@@ -57,9 +67,13 @@ jobs:
 
   gitleaks:
     name: Secret scan (gitleaks, full history)
-    runs-on: org-ci-nano
+    runs-on: ubuntu-latest
     container:
       image: ghcr.io/skyengpro/runner-provisioner/org-ci-runner@sha256:c33d5d2d6fe44e3d2017e73fd6c4dccff3d45ec1f3389268744e7feb7b7f7a7c
+      # The org CI image is private; a GitHub-hosted runner pulls it with the workflow token.
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
     timeout-minutes: 15
     env:
       GITLEAKS_VERSION: 8.30.1
@@ -87,9 +101,13 @@ jobs:
 
   frappe-semgrep:
     name: Frappe Semgrep Rules
-    runs-on: org-ci-nano
+    runs-on: ubuntu-latest
     container:
       image: ghcr.io/skyengpro/runner-provisioner/org-ci-runner@sha256:c33d5d2d6fe44e3d2017e73fd6c4dccff3d45ec1f3389268744e7feb7b7f7a7c
+      # The org CI image is private; a GitHub-hosted runner pulls it with the workflow token.
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
@@ -107,9 +125,13 @@ jobs:
 
   deps-vulnerable-check:
     name: Vulnerable dependency check
-    runs-on: org-ci-nano
+    runs-on: ubuntu-latest
     container:
       image: ghcr.io/skyengpro/runner-provisioner/org-ci-runner@sha256:c33d5d2d6fe44e3d2017e73fd6c4dccff3d45ec1f3389268744e7feb7b7f7a7c
+      # The org CI image is private; a GitHub-hosted runner pulls it with the workflow token.
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7

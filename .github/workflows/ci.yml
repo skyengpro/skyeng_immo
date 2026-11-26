@@ -17,13 +17,32 @@ concurrency:
 
 jobs:
   tests:
-    # ARC pool with a 20Gi work volume: org-ci-nano's 2Gi is too small for a full ERPNext bench (#15).
-    runs-on: org-ci-medium
-    # The org runners only accept jobs that run in a container.
-    container:
-      image: ghcr.io/skyengpro/runner-provisioner/org-ci-runner@sha256:c33d5d2d6fe44e3d2017e73fd6c4dccff3d45ec1f3389268744e7feb7b7f7a7c
+    # GitHub-hosted runner: its disk fits a full ERPNext bench (org-ci-nano's 2Gi did not, #15).
+    runs-on: ubuntu-latest
     name: Server (Frappe version-16, ERPNext, PropMS)
     timeout-minutes: 60
+
+    # MariaDB and Redis run as service containers, on the ports bench expects by default
+    # (`--skip-redis-config-generation` keeps redis_cache on 13000 and redis_queue on 11000).
+    services:
+      mariadb:
+        # Newest version Frappe v16 supports without a warning (frappe/database/mariadb/setup_db.py).
+        image: mariadb:11.8
+        env:
+          MARIADB_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: --health-cmd="healthcheck.sh --connect --innodb_initialized" --health-interval=5s --health-timeout=2s --health-retries=10
+      redis-cache:
+        image: redis:alpine
+        ports:
+          - 13000:6379
+        options: --health-cmd="redis-cli ping" --health-interval=5s --health-timeout=2s --health-retries=10
+      redis-queue:
+        image: redis:alpine
+        ports:
+          - 11000:6379
+        options: --health-cmd="redis-cli ping" --health-interval=5s --health-timeout=2s --health-retries=10
 
     steps:
       - name: Clone
@@ -45,13 +64,7 @@ jobs:
         with:
           node-version: 24
 
-      # setup-node ships npm and corepack, not yarn; GitHub-hosted runners preinstall it, the org image
-      # does not. bench runs `yarn install` (classic) for frappe, erpnext and this app.
-      - name: Install yarn
-        run: |
-          npm install --global yarn@1.22.22
-          yarn --version
-
+      # Yarn classic (1.22) is preinstalled on ubuntu-latest; bench runs `yarn install` with it.
       # Fails here if yarn is missing, instead of handing an empty path to the cache step.
       - name: Get yarn cache directory path
         id: yarn-cache-dir-path
@@ -68,39 +81,13 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-yarn-
 
-      # ARC runs jobs in a Kubernetes pod (container mode): `services:` is not available, so MariaDB
-      # and Redis run inside the job container, on the ports bench expects by default.
-      - name: Start MariaDB and Redis
+      # ubuntu-latest already ships pkg-config, libssl-dev and the compiler toolchain. Only the
+      # MariaDB client and headers are missing: mysqlclient builds against libmariadb-dev.
+      # (Same packages as Frappe's own GitHub-hosted CI, .github/actions/setup.)
+      - name: Install MariaDB client
         run: |
           sudo apt-get update
-          # pkg-config is required by bench; libmariadb-dev and the compiler toolchain build mysqlclient.
-          sudo apt-get install -y --no-install-recommends \
-            mariadb-server mariadb-client redis-server \
-            pkg-config libmariadb-dev build-essential libffi-dev libssl-dev
-          sudo apt-get clean
-          sudo rm -rf /var/lib/apt/lists/*
-
-          sudo redis-server --port 13000 --daemonize yes
-          sudo redis-server --port 11000 --daemonize yes
-
-          sudo mkdir -p /run/mysqld
-          sudo chown mysql:mysql /run/mysqld
-          if [ ! -d /var/lib/mysql/mysql ]; then
-            sudo mariadb-install-db --user=mysql --datadir=/var/lib/mysql
-          fi
-          sudo setsid nohup mariadbd --user=mysql \
-            --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci \
-            > "$RUNNER_TEMP/mariadb.log" 2>&1 &
-
-          for _ in $(seq 1 30); do
-            sudo mariadb -e "SELECT 1" >/dev/null 2>&1 && break
-            sleep 1
-          done
-          sudo mariadb -e "
-            ALTER USER 'root'@'localhost' IDENTIFIED BY 'root';
-            CREATE USER IF NOT EXISTS 'root'@'%' IDENTIFIED BY 'root';
-            GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' WITH GRANT OPTION;
-            FLUSH PRIVILEGES;"
+          sudo apt-get install -y --no-install-recommends mariadb-client libmariadb-dev
           mariadb -h 127.0.0.1 -uroot -proot -e "SELECT VERSION()"
 
       # Each framework app is pinned to the commit last tested locally. Bump them together.
@@ -112,7 +99,7 @@ jobs:
           uv tool install frappe-bench
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
           export PATH="$HOME/.local/bin:$PATH"
-          # --no-backups: no crontab in the image, and a 6-hourly backup job is useless in a throwaway CI bench.
+          # --no-backups: a 6-hourly backup job is useless in a throwaway CI bench.
           bench init \
             --no-backups \
             --skip-redis-config-generation \
@@ -150,7 +137,8 @@ jobs:
       - name: Create site and install apps
         working-directory: /home/runner/frappe-bench
         run: |
-          bench new-site --db-root-password root --admin-password admin test_site
+          # The database is the service container, reached over TCP (localhost would mean a socket).
+          bench new-site --db-host 127.0.0.1 --db-root-password root --admin-password admin test_site
           bench --site test_site install-app payments
           bench --site test_site install-app erpnext
           bench --site test_site install-app propms
@@ -170,7 +158,7 @@ jobs:
       - name: Show bench logs on failure
         if: failure()
         run: |
-          cat "$RUNNER_TEMP/mariadb.log" 2>/dev/null || true
+          docker logs "${{ job.services.mariadb.id }}" 2>&1 | tail -n 200 || true
           if [ ! -d "$HOME/frappe-bench" ]; then
             echo "No bench at $HOME/frappe-bench: the job failed before Init bench."
             exit 0
