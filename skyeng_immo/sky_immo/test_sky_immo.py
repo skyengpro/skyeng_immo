@@ -15,6 +15,9 @@ from skyeng_immo.sky_immo.access import app_role, get_scope
 from skyeng_immo.sky_immo.invite import invite_to_app
 from skyeng_immo.sky_immo.notifications import send_due_reminders, send_payment_emails
 
+# Company bootstrapped by ERPNext's test records, shared with the IMMO-03 tests.
+from skyeng_immo.tests.utils import COMPANY
+
 PREFIX = "MI-TEST"
 # 1×1 transparent PNG.
 PIXEL = (
@@ -67,7 +70,7 @@ def _property(name: str, owner: str | None, parent: str | None = None, is_group:
 			"unit_owner": owner,
 			"parent_property": parent,
 			"is_group": is_group,
-			"company": frappe.defaults.get_global_default("company"),
+			"company": COMPANY,
 			"rent": 100000,
 		}
 	)
@@ -80,7 +83,7 @@ def _lease(prop: str, customer: str, item: str) -> str:
 		frappe.get_doc(
 			{
 				"doctype": "Lease",
-				"company": frappe.defaults.get_global_default("company"),
+				"company": COMPANY,
 				"property": prop,
 				"customer": customer,
 				"lease_customer": customer,
@@ -100,13 +103,12 @@ def _lease(prop: str, customer: str, item: str) -> str:
 
 
 def _invoice(customer: str, lease: str, item: str, income: str, due_days: int) -> str:
-	company = frappe.defaults.get_global_default("company")
 	posting = add_days(today(), due_days - 10)
 	doc = frappe.get_doc(
 		{
 			"doctype": "Sales Invoice",
 			"customer": customer,
-			"company": company,
+			"company": COMPANY,
 			"set_posting_time": 1,
 			"posting_date": posting,
 			"due_date": add_days(today(), due_days),
@@ -114,6 +116,8 @@ def _invoice(customer: str, lease: str, item: str, income: str, due_days: int) -
 			"items": [{"item_code": item, "qty": 1, "rate": 100000, "income_account": income}],
 		}
 	)
+	# Rent without tax: _Test Company has a default sales tax template.
+	doc.flags.dont_auto_add_taxes = True
 	doc.insert(ignore_permissions=True)
 	doc.submit()
 	return doc.name
@@ -151,10 +155,9 @@ class TestSkyImmo(IntegrationTestCase):
 					"no_smtp_authentication": 1,
 				}
 			).insert(ignore_permissions=True)
-		company = frappe.defaults.get_global_default("company")
 		cls.income = frappe.get_all(
 			"Account",
-			filters={"company": company, "root_type": "Income", "is_group": 0},
+			filters={"company": COMPANY, "root_type": "Income", "is_group": 0},
 			pluck="name",
 			limit=1,
 		)[0]
@@ -387,7 +390,11 @@ class TestSkyImmo(IntegrationTestCase):
 		self.assertEqual(issue.issue_type, "Plomberie")
 		self.assertNotIn("<script>", issue.description)
 
-		files = frappe.get_all("File", filters={"attached_to_doctype": "Issue", "attached_to_name": issue.name}, fields=["is_private"])
+		files = frappe.get_all(
+			"File",
+			filters={"attached_to_doctype": "Issue", "attached_to_name": issue.name},
+			fields=["is_private"],
+		)
 		self.assertEqual(len(files), 2)
 		self.assertTrue(all(f.is_private for f in files))
 
@@ -462,7 +469,9 @@ class TestSkyImmo(IntegrationTestCase):
 		self.as_user(self.user_t1)
 		self.assertTrue(api.get_issue(name)["canComplete"])
 		self.assertEqual(api.complete_issue(name)["approval"], "completed")
-		self.assertEqual(frappe.db.get_value("Issue", name, ["sky_immo_status", "status"]), ("Completed", "Resolved"))
+		self.assertEqual(
+			frappe.db.get_value("Issue", name, ["sky_immo_status", "status"]), ("Completed", "Resolved")
+		)
 		# once completed, it cannot be completed again
 		with self.assertRaises(frappe.ValidationError):
 			api.complete_issue(name)
