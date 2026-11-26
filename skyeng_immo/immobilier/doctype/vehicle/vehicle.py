@@ -4,6 +4,10 @@ from frappe.model.document import Document
 
 
 class Vehicle(Document):
+	def before_naming(self):
+		# The name is the plate, and Frappe copies it back into plate_number after validate.
+		self.normalise_plate()
+
 	def validate(self):
 		self.normalise_plate()
 		self.sync_from_occupant()

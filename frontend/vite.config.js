@@ -16,7 +16,7 @@ export default defineConfig({
       jinjaBootData: false,
       buildConfig: {
         outDir: '../skyeng_immo/public/frontend',
-        indexHtmlPath: '../skyeng_immo/www/sky-immo.html',
+        indexHtmlPath: '../skyeng_immo/www/sky_immo.html',
         baseUrl: BASE,
       },
     }),

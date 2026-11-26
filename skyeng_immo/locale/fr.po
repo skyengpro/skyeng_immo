@@ -1,0 +1,712 @@
+# French translations for SkyEng Immo.
+# Copyright (C) 2026 SkyEngPro
+# This file is distributed under the same license as the SkyEng Immo project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: SkyEng Immo VERSION\n"
+"Report-Msgid-Bugs-To: contact@skyengpro.com\n"
+"POT-Creation-Date: 2026-11-17 11:51+0000\n"
+"PO-Revision-Date: 2026-11-17 11:51+0000\n"
+"Last-Translator: contact@skyengpro.com\n"
+"Language: fr\n"
+"Language-Team: contact@skyengpro.com\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.16.0\n"
+
+#. Option for the 'Operating mode' (Select) field in DocType 'Sky Immo
+#. Settings'
+#: skyeng_immo/immobilier/doctype/sky_immo_settings/sky_immo_settings.json
+msgid "A customer owns an instance"
+msgstr "Un client possède une instance"
+
+#: skyeng_immo/immobilier/doctype/sky_immo_settings/sky_immo_settings.js:4
+msgid "A customer owns this instance"
+msgstr "Un client possède cette instance"
+
+#. Option for the 'Statut' (Select) field in DocType 'Visitor Log'
+#: skyeng_immo/immobilier/doctype/visitor_log/visitor_log.json
+msgid "A l'interieur"
+msgstr ""
+
+#. Option for the 'Type de piece' (Select) field in DocType 'Occupant'
+#: skyeng_immo/immobilier/doctype/occupant/occupant.json
+msgid "Acte de naissance"
+msgstr ""
+
+#. Option for the 'Statut' (Select) field in DocType 'Occupant'
+#. Label of the is_active (Check) field in DocType 'Vehicle'
+#: skyeng_immo/immobilier/doctype/occupant/occupant.json
+#: skyeng_immo/immobilier/doctype/vehicle/vehicle.json
+msgid "Actif"
+msgstr ""
+
+#. Label of the section_admin (Section Break) field in DocType 'Vehicle'
+#: skyeng_immo/immobilier/doctype/vehicle/vehicle.json
+msgid "Administratif"
+msgstr ""
+
+#. Label of the guard_on_duty (Data) field in DocType 'Visitor Log'
+#: skyeng_immo/immobilier/doctype/visitor_log/visitor_log.json
+msgid "Agent de garde"
+msgstr ""
+
+#. Option for the 'Statut' (Select) field in DocType 'Parking Space'
+#: skyeng_immo/immobilier/doctype/parking_space/parking_space.json
+msgid "Attribuee"
+msgstr ""
+
+#. Label of the allocated_from (Date) field in DocType 'Parking Space'
+#: skyeng_immo/immobilier/doctype/parking_space/parking_space.json
+msgid "Attribuee depuis"
+msgstr ""
+
+#. Label of the section_alloc (Section Break) field in DocType 'Parking Space'
+#: skyeng_immo/immobilier/doctype/parking_space/parking_space.json
+msgid "Attribution"
+msgstr ""
+
+#. Option for the 'Qualite' (Select) field in DocType 'Occupant'
+#. Option for the 'Type' (Select) field in DocType 'Vehicle'
+#. Option for the 'Motif' (Select) field in DocType 'Visitor Log'
+#: skyeng_immo/immobilier/doctype/occupant/occupant.json
+#: skyeng_immo/immobilier/doctype/vehicle/vehicle.json
+#: skyeng_immo/immobilier/doctype/visitor_log/visitor_log.json
+msgid "Autre"
+msgstr ""
+
+#. Option for the 'Type de piece' (Select) field in DocType 'Visitor Log'
+#: skyeng_immo/immobilier/doctype/visitor_log/visitor_log.json
+msgid "Badge entreprise"
+msgstr ""
+
+#. Label of the badge_number (Data) field in DocType 'Visitor Log'
+#: skyeng_immo/immobilier/doctype/visitor_log/visitor_log.json
+msgid "Badge remis"
+msgstr ""
+
+#. Label of the lease (Link) field in DocType 'Occupant'
+#. Label of the lease (Link) field in DocType 'Parking Space'
+#: skyeng_immo/immobilier/doctype/occupant/occupant.json
+#: skyeng_immo/immobilier/doctype/parking_space/parking_space.json
+msgid "Bail"
+msgstr ""
+
+#. Option for the 'Type' (Select) field in DocType 'Parking Space'
+#: skyeng_immo/immobilier/doctype/parking_space/parking_space.json
+msgid "Box ferme"
+msgstr ""
+
+#. Option for the 'Type de piece' (Select) field in DocType 'Occupant'
+#. Option for the 'Type de piece' (Select) field in DocType 'Visitor Log'
+#: skyeng_immo/immobilier/doctype/occupant/occupant.json
+#: skyeng_immo/immobilier/doctype/visitor_log/visitor_log.json
+msgid "CNI"
+msgstr ""
+
+#. Description of the 'Statut' (Select) field in DocType 'Parking Space'
+#: skyeng_immo/immobilier/doctype/parking_space/parking_space.json
+msgid "Calcule a partir de l'attribution."
+msgstr ""
+
+#. Description of the 'Statut' (Select) field in DocType 'Occupant'
+#: skyeng_immo/immobilier/doctype/occupant/occupant.json
+msgid "Calcule a partir de la date de sortie."
+msgstr ""
+
+#. Option for the 'Type de piece' (Select) field in DocType 'Occupant'
+#. Option for the 'Type de piece' (Select) field in DocType 'Visitor Log'
+#: skyeng_immo/immobilier/doctype/occupant/occupant.json
+#: skyeng_immo/immobilier/doctype/visitor_log/visitor_log.json
+msgid "Carte de sejour"
+msgstr ""
+
+#. Option for the 'Qualite' (Select) field in DocType 'Occupant'
+#: skyeng_immo/immobilier/doctype/occupant/occupant.json
+msgid "Colocataire"
+msgstr ""
+
+#. Option for the 'Motif' (Select) field in DocType 'Visitor Log'
+#: skyeng_immo/immobilier/doctype/visitor_log/visitor_log.json
+msgid "Commercial"
+msgstr ""
+
+#. Option for the 'Qualite' (Select) field in DocType 'Occupant'
+#: skyeng_immo/immobilier/doctype/occupant/occupant.json
+msgid "Conjoint(e)"
+msgstr ""
+
+#. Label of the section_personal (Section Break) field in DocType 'Occupant'
+#: skyeng_immo/immobilier/doctype/occupant/occupant.json
+msgid "Coordonnees"
+msgstr ""
+
+#. Label of the color (Data) field in DocType 'Vehicle'
+#: skyeng_immo/immobilier/doctype/vehicle/vehicle.json
+msgid "Couleur"
+msgstr ""
+
+#. Option for the 'Type' (Select) field in DocType 'Parking Space'
+#: skyeng_immo/immobilier/doctype/parking_space/parking_space.json
+msgid "Couverte"
+msgstr ""
+
+#: skyeng_immo/invitation.py
+msgid "Customer {0} has no email address. Add one to their primary contact."
+msgstr "Le client {0} n'a pas d'adresse e-mail. Ajoutez-en une à son contact principal."
+
+#: skyeng_immo/invitation.py
+msgid "Customer {0} is disabled."
+msgstr "Le client {0} est désactivé."
+
+#: skyeng_immo/invitation.py
+msgid "Customer {0} owns no property and has no active lease."
+msgstr "Le client {0} ne possède aucun bien et n'a aucun bail actif."
+
+#. Label of the move_in_date (Date) field in DocType 'Occupant'
+#: skyeng_immo/immobilier/doctype/occupant/occupant.json
+msgid "Date d'entree"
+msgstr ""
+
+#. Label of the date_of_birth (Date) field in DocType 'Occupant'
+#: skyeng_immo/immobilier/doctype/occupant/occupant.json
+msgid "Date de naissance"
+msgstr ""
+
+#. Label of the move_out_date (Date) field in DocType 'Occupant'
+#: skyeng_immo/immobilier/doctype/occupant/occupant.json
+msgid "Date de sortie"
+msgstr ""
+
+#. Label of the duration_minutes (Int) field in DocType 'Visitor Log'
+#: skyeng_immo/immobilier/doctype/visitor_log/visitor_log.json
+msgid "Duree (minutes)"
+msgstr ""
+
+#. Label of the email (Data) field in DocType 'Occupant'
+#: skyeng_immo/immobilier/doctype/occupant/occupant.json
+msgid "Email"
+msgstr ""
+
+#. Option for the 'Qualite' (Select) field in DocType 'Occupant'
+#: skyeng_immo/immobilier/doctype/occupant/occupant.json
+msgid "Employe(e) de maison"
+msgstr ""
+
+#. Option for the 'Qualite' (Select) field in DocType 'Occupant'
+#: skyeng_immo/immobilier/doctype/occupant/occupant.json
+msgid "Enfant"
+msgstr ""
+
+#. Label of the check_in (Datetime) field in DocType 'Visitor Log'
+#: skyeng_immo/immobilier/doctype/visitor_log/visitor_log.json
+msgid "Entree"
+msgstr ""
+
+#. Label of the insurance_expiry (Date) field in DocType 'Vehicle'
+#: skyeng_immo/immobilier/doctype/vehicle/vehicle.json
+msgid "Expiration assurance"
+msgstr ""
+
+#. Label of the id_expiry (Date) field in DocType 'Occupant'
+#: skyeng_immo/immobilier/doctype/occupant/occupant.json
+msgid "Expiration de la piece"
+msgstr ""
+
+#. Option for the 'Niveau' (Select) field in DocType 'Parking Space'
+#: skyeng_immo/immobilier/doctype/parking_space/parking_space.json
+msgid "Exterieur"
+msgstr ""
+
+#. Name of a role
+#: skyeng_immo/immobilier/doctype/occupant/occupant.json
+#: skyeng_immo/immobilier/doctype/parking_space/parking_space.json
+#: skyeng_immo/immobilier/doctype/vehicle/vehicle.json
+#: skyeng_immo/immobilier/doctype/visitor_log/visitor_log.json
+msgid "Gardien"
+msgstr ""
+
+#. Label of the section_guard (Section Break) field in DocType 'Visitor Log'
+#: skyeng_immo/immobilier/doctype/visitor_log/visitor_log.json
+msgid "Guerite"
+msgstr ""
+
+#: frontend/src/pages/Home.vue:3
+msgid "Home"
+msgstr "Accueil"
+
+#. Option for the 'Statut' (Select) field in DocType 'Parking Space'
+#: skyeng_immo/immobilier/doctype/parking_space/parking_space.json
+msgid "Hors service"
+msgstr ""
+
+#. Label of the host_occupant (Link) field in DocType 'Visitor Log'
+#: skyeng_immo/immobilier/doctype/visitor_log/visitor_log.json
+msgid "Hote"
+msgstr ""
+
+#. Label of the section_identity (Section Break) field in DocType 'Visitor Log'
+#: skyeng_immo/immobilier/doctype/visitor_log/visitor_log.json
+msgid "Identite"
+msgstr ""
+
+#. Label of the plate_number (Data) field in DocType 'Vehicle'
+#. Label of the vehicle_plate (Data) field in DocType 'Visitor Log'
+#: skyeng_immo/immobilier/doctype/vehicle/vehicle.json
+#: skyeng_immo/immobilier/doctype/visitor_log/visitor_log.json
+msgid "Immatriculation"
+msgstr ""
+
+#. Label of the property (Link) field in DocType 'Parking Space'
+#: skyeng_immo/immobilier/doctype/parking_space/parking_space.json
+msgid "Immeuble / site"
+msgstr ""
+
+#: skyeng_immo/public/js/customer.js
+msgid "Invitation sent to {0}"
+msgstr "Invitation envoyée à {0}"
+
+#: skyeng_immo/public/js/customer.js
+msgid "Invite to Sky-immo"
+msgstr "Inviter sur Sky-immo"
+
+#: skyeng_immo/immobilier/doctype/visitor_log/visitor_log.py:15
+msgid "L'heure d'entree est dans le futur."
+msgstr ""
+
+#: skyeng_immo/immobilier/doctype/visitor_log/visitor_log.py:39
+msgid "L'hote {0} n'est plus un occupant actif."
+msgstr ""
+
+#: skyeng_immo/immobilier/doctype/occupant/occupant.py:17
+msgid "La date de sortie ({0}) precede la date d'entree ({1})."
+msgstr ""
+
+#: skyeng_immo/immobilier/doctype/occupant/occupant.py:25
+msgid "La piece d'identite de {0} a expire le {1}."
+msgstr ""
+
+#: skyeng_immo/immobilier/doctype/vehicle/vehicle.py:48
+msgid "La place {0} est attribuee a {1}, pas a {2}."
+msgstr ""
+
+#: skyeng_immo/immobilier/doctype/vehicle/vehicle.py:42
+msgid "La place {0} est deja occupee par le vehicule {1}."
+msgstr ""
+
+#: skyeng_immo/immobilier/doctype/visitor_log/visitor_log.py:20
+msgid "La sortie ({0}) precede l'entree ({1})."
+msgstr ""
+
+#: skyeng_immo/immobilier/doctype/occupant/occupant.py:40
+#: skyeng_immo/immobilier/doctype/parking_space/parking_space.py:30
+msgid "Le bail {0} porte sur {1}, pas sur {2}."
+msgstr ""
+
+#. Option for the 'Statut' (Select) field in DocType 'Parking Space'
+#: skyeng_immo/immobilier/doctype/parking_space/parking_space.json
+msgid "Libre"
+msgstr ""
+
+#. Option for the 'Motif' (Select) field in DocType 'Visitor Log'
+#: skyeng_immo/immobilier/doctype/visitor_log/visitor_log.json
+msgid "Livraison"
+msgstr ""
+
+#. Label of the customer (Link) field in DocType 'Occupant'
+#: skyeng_immo/immobilier/doctype/occupant/occupant.json
+msgid "Locataire de reference"
+msgstr ""
+
+#. Option for the 'Qualite' (Select) field in DocType 'Occupant'
+#: skyeng_immo/immobilier/doctype/occupant/occupant.json
+msgid "Locataire titulaire"
+msgstr ""
+
+#. Label of the make (Data) field in DocType 'Vehicle'
+#: skyeng_immo/immobilier/doctype/vehicle/vehicle.json
+msgid "Marque"
+msgstr ""
+
+#. Label of the model (Data) field in DocType 'Vehicle'
+#: skyeng_immo/immobilier/doctype/vehicle/vehicle.json
+msgid "Modele"
+msgstr ""
+
+#. Label of the purpose (Select) field in DocType 'Visitor Log'
+#: skyeng_immo/immobilier/doctype/visitor_log/visitor_log.json
+msgid "Motif"
+msgstr ""
+
+#. Option for the 'Type' (Select) field in DocType 'Vehicle'
+#: skyeng_immo/immobilier/doctype/vehicle/vehicle.json
+msgid "Moto"
+msgstr ""
+
+#. Label of the section_movement (Section Break) field in DocType 'Visitor Log'
+#: skyeng_immo/immobilier/doctype/visitor_log/visitor_log.json
+msgid "Mouvement"
+msgstr ""
+
+#. Label of the nationality (Data) field in DocType 'Occupant'
+#: skyeng_immo/immobilier/doctype/occupant/occupant.json
+msgid "Nationalite"
+msgstr ""
+
+#. Label of the level (Select) field in DocType 'Parking Space'
+#: skyeng_immo/immobilier/doctype/parking_space/parking_space.json
+msgid "Niveau"
+msgstr ""
+
+#: skyeng_immo/invitation.py
+msgid "No outgoing email account is set up, so the invitation cannot be sent."
+msgstr "Aucun compte e-mail sortant n'est configuré : l'invitation ne peut pas être envoyée."
+
+#. Label of the emergency_contact_name (Data) field in DocType 'Occupant'
+#: skyeng_immo/immobilier/doctype/occupant/occupant.json
+msgid "Nom"
+msgstr ""
+
+#. Label of the full_name (Data) field in DocType 'Occupant'
+#: skyeng_immo/immobilier/doctype/occupant/occupant.json
+msgid "Nom complet"
+msgstr ""
+
+#. Label of the visitor_name (Data) field in DocType 'Visitor Log'
+#: skyeng_immo/immobilier/doctype/visitor_log/visitor_log.json
+msgid "Nom du visiteur"
+msgstr ""
+
+#. Option for the 'Type' (Select) field in DocType 'Parking Space'
+#: skyeng_immo/immobilier/doctype/parking_space/parking_space.json
+msgid "Non couverte"
+msgstr ""
+
+#: frontend/src/pages/Home.vue:4
+msgid "Nothing to show yet."
+msgstr "Rien à afficher pour l'instant."
+
+#. Label of the id_number (Data) field in DocType 'Occupant'
+#. Label of the id_number (Data) field in DocType 'Visitor Log'
+#: skyeng_immo/immobilier/doctype/occupant/occupant.json
+#: skyeng_immo/immobilier/doctype/visitor_log/visitor_log.json
+msgid "Numero de piece"
+msgstr ""
+
+#. Label of the parking_number (Data) field in DocType 'Parking Space'
+#: skyeng_immo/immobilier/doctype/parking_space/parking_space.json
+msgid "Numero de place"
+msgstr ""
+
+#. Label of the notes (Small Text) field in DocType 'Occupant'
+#. Label of the notes (Small Text) field in DocType 'Parking Space'
+#. Label of the notes (Small Text) field in DocType 'Vehicle'
+#. Label of the remarks (Small Text) field in DocType 'Visitor Log'
+#: skyeng_immo/immobilier/doctype/occupant/occupant.json
+#: skyeng_immo/immobilier/doctype/parking_space/parking_space.json
+#: skyeng_immo/immobilier/doctype/vehicle/vehicle.json
+#: skyeng_immo/immobilier/doctype/visitor_log/visitor_log.json
+msgid "Observations"
+msgstr ""
+
+#. Name of a DocType
+#. Label of the owner_occupant (Link) field in DocType 'Vehicle'
+#: skyeng_immo/immobilier/doctype/occupant/occupant.json
+#: skyeng_immo/immobilier/doctype/vehicle/vehicle.json
+msgid "Occupant"
+msgstr ""
+
+#. Description of the 'Hote' (Link) field in DocType 'Visitor Log'
+#: skyeng_immo/immobilier/doctype/visitor_log/visitor_log.json
+msgid "Occupant qui recoit. La liste est filtree sur les occupants actifs de l'unite."
+msgstr ""
+
+#. Label of the section_stay (Section Break) field in DocType 'Occupant'
+#: skyeng_immo/immobilier/doctype/occupant/occupant.json
+msgid "Occupation"
+msgstr ""
+
+#. Label of the operating_mode (Select) field in DocType 'Sky Immo Settings'
+#: skyeng_immo/immobilier/doctype/sky_immo_settings/sky_immo_settings.json
+msgid "Operating mode"
+msgstr "Mode d'exploitation"
+
+#. Option for the 'Type' (Select) field in DocType 'Parking Space'
+#: skyeng_immo/immobilier/doctype/parking_space/parking_space.json
+msgid "PMR"
+msgstr ""
+
+#. Option for the 'Qualite' (Select) field in DocType 'Occupant'
+#: skyeng_immo/immobilier/doctype/occupant/occupant.json
+msgid "Parent"
+msgstr ""
+
+#. Name of a DocType
+#: skyeng_immo/immobilier/doctype/parking_space/parking_space.json
+msgid "Parking Space"
+msgstr ""
+
+#. Option for the 'Statut' (Select) field in DocType 'Occupant'
+#: skyeng_immo/immobilier/doctype/occupant/occupant.json
+msgid "Parti"
+msgstr ""
+
+#. Option for the 'Type de piece' (Select) field in DocType 'Occupant'
+#. Option for the 'Type de piece' (Select) field in DocType 'Visitor Log'
+#: skyeng_immo/immobilier/doctype/occupant/occupant.json
+#: skyeng_immo/immobilier/doctype/visitor_log/visitor_log.json
+msgid "Passeport"
+msgstr ""
+
+#. Option for the 'Type de piece' (Select) field in DocType 'Occupant'
+#. Option for the 'Type de piece' (Select) field in DocType 'Visitor Log'
+#: skyeng_immo/immobilier/doctype/occupant/occupant.json
+#: skyeng_immo/immobilier/doctype/visitor_log/visitor_log.json
+msgid "Permis de conduire"
+msgstr ""
+
+#. Label of the section_emergency (Section Break) field in DocType 'Occupant'
+#: skyeng_immo/immobilier/doctype/occupant/occupant.json
+msgid "Personne a prevenir"
+msgstr ""
+
+#. Label of the photo (Attach Image) field in DocType 'Occupant'
+#: skyeng_immo/immobilier/doctype/occupant/occupant.json
+msgid "Photo"
+msgstr ""
+
+#. Label of the section_identity (Section Break) field in DocType 'Occupant'
+#: skyeng_immo/immobilier/doctype/occupant/occupant.json
+msgid "Piece d'identite"
+msgstr ""
+
+#. Label of the parking_space (Link) field in DocType 'Vehicle'
+#: skyeng_immo/immobilier/doctype/vehicle/vehicle.json
+msgid "Place de parking"
+msgstr ""
+
+#. Option for the 'Motif' (Select) field in DocType 'Visitor Log'
+#: skyeng_immo/immobilier/doctype/visitor_log/visitor_log.json
+msgid "Prestataire / Entretien"
+msgstr ""
+
+#. Name of a role
+#: skyeng_immo/immobilier/doctype/occupant/occupant.json
+#: skyeng_immo/immobilier/doctype/parking_space/parking_space.json
+#: skyeng_immo/immobilier/doctype/sky_immo_settings/sky_immo_settings.json
+#: skyeng_immo/immobilier/doctype/vehicle/vehicle.json
+#: skyeng_immo/immobilier/doctype/visitor_log/visitor_log.json
+msgid "Property Manager"
+msgstr ""
+
+#. Label of the section_owner (Section Break) field in DocType 'Vehicle'
+#: skyeng_immo/immobilier/doctype/vehicle/vehicle.json
+msgid "Proprietaire"
+msgstr ""
+
+#. Label of the occupant_type (Select) field in DocType 'Occupant'
+#: skyeng_immo/immobilier/doctype/occupant/occupant.json
+msgid "Qualite"
+msgstr ""
+
+#. Label of the monthly_fee (Currency) field in DocType 'Parking Space'
+#: skyeng_immo/immobilier/doctype/parking_space/parking_space.json
+msgid "Redevance mensuelle"
+msgstr ""
+
+#. Description of the 'Unite' (Link) field in DocType 'Vehicle'
+#: skyeng_immo/immobilier/doctype/vehicle/vehicle.json
+msgid "Renseigne automatiquement depuis l'occupant."
+msgstr ""
+
+#. Description of the 'Locataire de reference' (Link) field in DocType
+#. 'Occupant'
+#: skyeng_immo/immobilier/doctype/occupant/occupant.json
+msgid "Renseigne automatiquement depuis le bail."
+msgstr ""
+
+#. Option for the 'Statut' (Select) field in DocType 'Parking Space'
+#: skyeng_immo/immobilier/doctype/parking_space/parking_space.json
+msgid "Reservee visiteur"
+msgstr ""
+
+#. Option for the 'Niveau' (Select) field in DocType 'Parking Space'
+#: skyeng_immo/immobilier/doctype/parking_space/parking_space.json
+msgid "Rez-de-chaussee"
+msgstr ""
+
+#: skyeng_immo/public/js/customer.js
+msgid "Send an invitation to {0}?"
+msgstr "Envoyer une invitation à {0} ?"
+
+#. Option for the 'Type' (Select) field in DocType 'Vehicle'
+#: skyeng_immo/immobilier/doctype/vehicle/vehicle.json
+msgid "SUV / 4x4"
+msgstr ""
+
+#. Label of the id_document (Attach) field in DocType 'Occupant'
+#: skyeng_immo/immobilier/doctype/occupant/occupant.json
+msgid "Scan de la piece"
+msgstr ""
+
+#. Label of the naming_series (Select) field in DocType 'Occupant'
+#. Label of the naming_series (Select) field in DocType 'Visitor Log'
+#: skyeng_immo/immobilier/doctype/occupant/occupant.json
+#: skyeng_immo/immobilier/doctype/visitor_log/visitor_log.json
+msgid "Serie"
+msgstr ""
+
+#: frontend/src/App.vue:8
+msgid "Sign out"
+msgstr "Se déconnecter"
+
+#. Name of a DocType
+#: skyeng_immo/immobilier/doctype/sky_immo_settings/sky_immo_settings.json
+msgid "Sky Immo Settings"
+msgstr "Paramètres Sky Immo"
+
+#. Option for the 'Operating mode' (Select) field in DocType 'Sky Immo
+#. Settings'
+#: skyeng_immo/immobilier/doctype/sky_immo_settings/sky_immo_settings.json
+msgid "Sky owns an instance"
+msgstr "Sky possède une instance"
+
+#. Option for the 'Statut' (Select) field in DocType 'Visitor Log'
+#: skyeng_immo/immobilier/doctype/visitor_log/visitor_log.json
+msgid "Sorti"
+msgstr ""
+
+#. Label of the check_out (Datetime) field in DocType 'Visitor Log'
+#: skyeng_immo/immobilier/doctype/visitor_log/visitor_log.json
+msgid "Sortie"
+msgstr ""
+
+#. Option for the 'Niveau' (Select) field in DocType 'Parking Space'
+#: skyeng_immo/immobilier/doctype/parking_space/parking_space.json
+msgid "Sous-sol 1"
+msgstr ""
+
+#. Option for the 'Niveau' (Select) field in DocType 'Parking Space'
+#: skyeng_immo/immobilier/doctype/parking_space/parking_space.json
+msgid "Sous-sol 2"
+msgstr ""
+
+#. Label of the status (Select) field in DocType 'Occupant'
+#. Label of the status (Select) field in DocType 'Parking Space'
+#. Label of the status (Select) field in DocType 'Visitor Log'
+#: skyeng_immo/immobilier/doctype/occupant/occupant.json
+#: skyeng_immo/immobilier/doctype/parking_space/parking_space.json
+#: skyeng_immo/immobilier/doctype/visitor_log/visitor_log.json
+msgid "Statut"
+msgstr ""
+
+#. Name of a role
+#: skyeng_immo/immobilier/doctype/occupant/occupant.json
+#: skyeng_immo/immobilier/doctype/parking_space/parking_space.json
+#: skyeng_immo/immobilier/doctype/sky_immo_settings/sky_immo_settings.json
+#: skyeng_immo/immobilier/doctype/vehicle/vehicle.json
+#: skyeng_immo/immobilier/doctype/visitor_log/visitor_log.json
+msgid "System Manager"
+msgstr ""
+
+#. Label of the phone (Data) field in DocType 'Occupant'
+#. Label of the emergency_contact_phone (Data) field in DocType 'Occupant'
+#. Label of the visitor_phone (Data) field in DocType 'Visitor Log'
+#: skyeng_immo/immobilier/doctype/occupant/occupant.json
+#: skyeng_immo/immobilier/doctype/visitor_log/visitor_log.json
+msgid "Telephone"
+msgstr ""
+
+#. Label of the space_type (Select) field in DocType 'Parking Space'
+#. Label of the vehicle_type (Select) field in DocType 'Vehicle'
+#: skyeng_immo/immobilier/doctype/parking_space/parking_space.json
+#: skyeng_immo/immobilier/doctype/vehicle/vehicle.json
+msgid "Type"
+msgstr ""
+
+#. Label of the id_type (Select) field in DocType 'Occupant'
+#. Label of the id_type (Select) field in DocType 'Visitor Log'
+#: skyeng_immo/immobilier/doctype/occupant/occupant.json
+#: skyeng_immo/immobilier/doctype/visitor_log/visitor_log.json
+msgid "Type de piece"
+msgstr ""
+
+#. Label of the property (Link) field in DocType 'Occupant'
+#. Label of the property (Link) field in DocType 'Vehicle'
+#: skyeng_immo/immobilier/doctype/occupant/occupant.json
+#: skyeng_immo/immobilier/doctype/vehicle/vehicle.json
+msgid "Unite"
+msgstr ""
+
+#. Label of the allocated_to_unit (Link) field in DocType 'Parking Space'
+#: skyeng_immo/immobilier/doctype/parking_space/parking_space.json
+msgid "Unite attributaire"
+msgstr ""
+
+#. Label of the visiting_property (Link) field in DocType 'Visitor Log'
+#: skyeng_immo/immobilier/doctype/visitor_log/visitor_log.json
+msgid "Unite visitee"
+msgstr ""
+
+#: skyeng_immo/invitation.py
+msgid "User {0} is disabled. Enable them before sending an invitation."
+msgstr "L'utilisateur {0} est désactivé. Réactivez-le avant d'envoyer une invitation."
+
+#. Option for the 'Type' (Select) field in DocType 'Vehicle'
+#: skyeng_immo/immobilier/doctype/vehicle/vehicle.json
+msgid "Utilitaire"
+msgstr ""
+
+#. Name of a DocType
+#: skyeng_immo/immobilier/doctype/vehicle/vehicle.json
+msgid "Vehicle"
+msgstr ""
+
+#. Label of the sticker_number (Data) field in DocType 'Vehicle'
+#: skyeng_immo/immobilier/doctype/vehicle/vehicle.json
+msgid "Vignette / macaron"
+msgstr ""
+
+#. Option for the 'Motif' (Select) field in DocType 'Visitor Log'
+#: skyeng_immo/immobilier/doctype/visitor_log/visitor_log.json
+msgid "Visite de bien"
+msgstr ""
+
+#. Option for the 'Motif' (Select) field in DocType 'Visitor Log'
+#: skyeng_immo/immobilier/doctype/visitor_log/visitor_log.json
+msgid "Visite privee"
+msgstr ""
+
+#. Name of a DocType
+#: skyeng_immo/immobilier/doctype/visitor_log/visitor_log.json
+msgid "Visitor Log"
+msgstr ""
+
+#. Option for the 'Type' (Select) field in DocType 'Vehicle'
+#: skyeng_immo/immobilier/doctype/vehicle/vehicle.json
+msgid "Voiture"
+msgstr ""
+
+#: skyeng_immo/immobilier/doctype/sky_immo_settings/sky_immo_settings.js:3
+msgid "We own the instance"
+msgstr "Nous possédons l'instance"
+
+#: skyeng_immo/immobilier/doctype/visitor_log/visitor_log.py:58
+msgid "{0} est deja sorti a {1}."
+msgstr ""
+
+#: skyeng_immo/immobilier/doctype/vehicle/vehicle.py:26
+msgid "{0} n'est plus un occupant actif."
+msgstr ""
+
+#: skyeng_immo/immobilier/doctype/visitor_log/visitor_log.py:33
+msgid "{0} n'occupe pas {1} mais {2}."
+msgstr ""
+
+#: skyeng_immo/immobilier/doctype/parking_space/parking_space.py:21
+msgid "{0} ne depend pas de {1}. Une place ne peut etre attribuee qu'a une unite du meme site."
+msgstr ""
