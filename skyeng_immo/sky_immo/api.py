@@ -534,9 +534,7 @@ def _receipts(scope: Scope, invoice_names: list[str]) -> dict[str, list[str]]:
 		)
 	)
 	allowed = {
-		entry
-		for entry in entries
-		if all(r.reference_name in visible for r in settled if r.parent == entry)
+		entry for entry in entries if all(r.reference_name in visible for r in settled if r.parent == entry)
 	}
 	result: dict[str, list[str]] = {}
 	for payment in payments:
@@ -787,7 +785,7 @@ def _issue_photos(name: str) -> list[dict]:
 	extension when the name is taken on disk) and was saved by the account that created the request.
 	"""
 	creator = frappe.db.get_value("Issue", name, "owner")
-	extensions = "|".join(map(re.escape, PHOTO_FORMATS.values()))
+	extensions = "|".join(re.escape(ext) for ext in PHOTO_FORMATS.values())
 	pattern = re.compile(rf"^{re.escape(name)}-photo(?:-\d+)?[0-9a-zA-Z]*\.({extensions})$")
 	return [
 		{"id": f.name, "name": f.file_name}
