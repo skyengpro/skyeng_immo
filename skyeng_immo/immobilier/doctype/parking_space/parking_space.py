@@ -1,6 +1,7 @@
 import frappe
 from frappe import _
 from frappe.model.document import Document
+from frappe.query_builder.functions import Count
 
 
 class ParkingSpace(Document):
@@ -44,19 +45,21 @@ class ParkingSpace(Document):
 @frappe.whitelist()
 def parking_summary(property_name: str | None = None) -> list[dict]:
 	"""Places par unite - repond a 'combien de voitures par appartement'."""
-	conditions = "WHERE p.allocated_to_unit IS NOT NULL"
-	values = {}
-	if property_name:
-		conditions += " AND p.property = %(property)s"
-		values["property"] = property_name
-	return frappe.db.sql(
-		f"""SELECT p.allocated_to_unit AS unit,
-				COUNT(DISTINCT p.name) AS spaces,
-				COUNT(DISTINCT v.name) AS vehicles
-			FROM `tabParking Space` p
-			LEFT JOIN `tabVehicle` v ON v.parking_space = p.name AND v.is_active = 1
-			{conditions}
-			GROUP BY p.allocated_to_unit ORDER BY p.allocated_to_unit""",
-		values,
-		as_dict=True,
+	space = frappe.qb.DocType("Parking Space")
+	vehicle = frappe.qb.DocType("Vehicle")
+	query = (
+		frappe.qb.from_(space)
+		.left_join(vehicle)
+		.on((vehicle.parking_space == space.name) & (vehicle.is_active == 1))
+		.select(
+			space.allocated_to_unit.as_("unit"),
+			Count(space.name).distinct().as_("spaces"),
+			Count(vehicle.name).distinct().as_("vehicles"),
+		)
+		.where(space.allocated_to_unit.isnotnull())
+		.groupby(space.allocated_to_unit)
+		.orderby(space.allocated_to_unit)
 	)
+	if property_name:
+		query = query.where(space.property == property_name)
+	return query.run(as_dict=True)

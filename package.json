@@ -1,7 +1,9 @@
 {
-	"private": true,
-	"scripts": {
-		"dev": "cd frontend && yarn dev",
-		"build": "cd frontend && yarn install --frozen-lockfile && yarn build"
-	}
+  "private": true,
+  "description": "Builds the Sky Immo frontend (frontend/) during `bench build`.",
+  "scripts": {
+    "postinstall": "cd frontend && npm ci --no-audit --no-fund",
+    "dev": "cd frontend && npm run dev",
+    "build": "cd frontend && npm run build"
+  }
 }

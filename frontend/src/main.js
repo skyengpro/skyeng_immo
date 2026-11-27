@@ -1,11 +1,10 @@
-import "./index.css";
+import { createApp } from 'vue'
+import App from './App.vue'
+import router from './router'
+import { registerServiceWorker } from './pwa'
+import './install' // catches the browser's install offer, which can come before the first screen
+import './theme'
+import './style.css'
 
-import { createApp } from "vue";
-
-import App from "./App.vue";
-import router from "./router";
-import { loadTranslations, translationPlugin } from "./translation";
-
-loadTranslations().then(() => {
-	createApp(App).use(router).use(translationPlugin).mount("#app");
-});
+createApp(App).use(router).mount('#app')
+registerServiceWorker()

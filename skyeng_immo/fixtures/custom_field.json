@@ -1,0 +1,17 @@
+[
+ {
+  "doctype": "Custom Field",
+  "name": "Issue-sky_immo_status",
+  "dt": "Issue",
+  "fieldname": "sky_immo_status",
+  "label": "Sky Immo status",
+  "fieldtype": "Select",
+  "options": "\nAwaiting approval\nIn progress\nRejected\nCompleted",
+  "insert_after": "status",
+  "read_only": 1,
+  "allow_on_submit": 0,
+  "in_standard_filter": 1,
+  "module": "Immobilier",
+  "description": "Owner decision on a tenant maintenance request (Sky Immo app)."
+ }
+]

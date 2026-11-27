@@ -1,20 +1,27 @@
 <!doctype html>
-<html lang="{{ boot.lang or 'en' }}" dir="{{ boot.text_direction or 'ltr' }}">
-	<head>
-		<meta charset="UTF-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-		<title>Sky-immo</title>
-		<meta name="theme-color" content="#1f4e8c" />
-		<meta name="mobile-web-app-capable" content="yes" />
-		<meta name="apple-mobile-web-app-capable" content="yes" />
-		<meta name="apple-mobile-web-app-title" content="Sky-immo" />
-		<meta name="apple-mobile-web-app-status-bar-style" content="default" />
-		<link rel="manifest" href="/assets/skyeng_immo/frontend/manifest.json" />
-		<link rel="icon" type="image/png" href="/assets/skyeng_immo/frontend/icons/icon-192.png" />
-		<link rel="apple-touch-icon" href="/assets/skyeng_immo/frontend/icons/apple-touch-icon.png" />
-	</head>
-	<body>
-		<div id="app"></div>
-		<script type="module" src="/src/main.js"></script>
-	</body>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#f5f4ef" />
+    <meta name="description" content="Properties, leases, rent and repairs for landlords and tenants" />
+    <meta name="robots" content="noindex" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Sky-immo" />
+    <link rel="icon" type="image/png" href="/assets/skyeng_immo/frontend/favicon.png" />
+    <link rel="apple-touch-icon" href="/assets/skyeng_immo/frontend/apple-touch-icon.png" />
+    <title>Sky-immo</title>
+    <script>
+      // set the theme before the first paint, so a dark device never flashes white
+      try {
+        var m = localStorage.getItem('sky_immo.theme') || 'system'
+        var d = m === 'dark' || (m === 'system' && matchMedia('(prefers-color-scheme: dark)').matches)
+        document.documentElement.setAttribute('data-theme', d ? 'dark' : 'light')
+      } catch (e) {}
+    </script>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
 </html>

@@ -39,8 +39,10 @@ Two operating modes, same code:
 
 - **Mode A**: Sky owns the instance. One company (Sky's), every landlord on the same site, no
   Property Manager in the app. Landlords never see each other's properties.
-- **Mode B**: a customer owns the instance. Third-party landlords are optional. For the customer's
-  own properties there is no landlord account, so the Property Manager approves maintenance.
+- **Mode B**: a customer owns the instance. Third-party landlords are optional. The customer's own
+  properties have the customer's own Customer as owner. Only a user linked to the owner (a portal
+  user of that Customer) approves or rejects maintenance, so a Property Manager decides on the
+  customer's own properties by being a portal user of the customer's Customer.
 
 The owner is always set on every property, even when it is the customer's own company, so visibility
 rules are the same in both modes.
@@ -68,7 +70,10 @@ rules are the same in both modes.
   `Immobilier` dashboard. Order in `hooks.fixtures` matters (cards/charts before workspace).
 - Access: `access.py` holds `get_scope(user)`, the one computation of what a user may see (owner
   inherited along `parent_property`, leases, invoices, maintenance requests). Every endpoint in
-  `api.py` starts from it. `invitation.py` backs the "Invite to Sky-immo" button
+  `api.py` and in `sky_immo/api.py` (the app screens) starts from it; landlord screens use
+  `owner_side`, tenant screens `tenant_side`. Never add a second scope computation.
+  `sky_immo/maintenance.py` holds the approve, reject and complete decisions.
+  `invitation.py` backs the "Invite to Sky-immo" button
   (`public/js/customer.js`). `navigation.py` holds the apps tile, the landing page and the default app.
 - `Sky Immo Settings` (Single, module `Immobilier`): operating mode of the site. System Manager and
   Property Manager only.

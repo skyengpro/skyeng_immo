@@ -1,27 +1,27 @@
 <template>
-	<div class="flex min-h-screen min-w-0 flex-col bg-surface-gray-1 text-ink-gray-9">
-		<header
-			class="sticky top-0 z-10 border-b border-outline-gray-1 bg-surface-white pt-[env(safe-area-inset-top)]"
-		>
-			<div class="mx-auto flex h-14 w-full max-w-5xl items-center justify-between gap-3 px-4">
-				<span class="truncate text-lg font-semibold">Sky-immo</span>
-				<Button variant="ghost" size="md" :label="__('Sign out')" @click="signOut" />
-			</div>
-		</header>
-		<main class="mx-auto w-full min-w-0 max-w-5xl flex-1 px-4 py-6 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
-			<router-view />
-		</main>
-	</div>
+  <FrappeUIProvider>
+    <RouterView v-if="route.meta.public" />
+    <AppShell v-else-if="session.user">
+      <RouterView v-slot="{ Component }">
+        <component :is="Component" :key="route.path" />
+      </RouterView>
+    </AppShell>
+    <div v-else class="flex h-screen items-center justify-center">
+      <LoadingIndicator class="size-6 text-ink-mute" />
+    </div>
+  </FrappeUIProvider>
 </template>
 
 <script setup>
-import { Button } from "frappe-ui";
+import { watchEffect } from 'vue'
+import { useRoute } from 'vue-router'
+import { FrappeUIProvider, LoadingIndicator } from 'frappe-ui'
+import AppShell from './components/AppShell.vue'
+import { session } from './session'
+import { t } from './i18n'
 
-async function signOut() {
-	await fetch("/api/method/logout", {
-		method: "POST",
-		headers: { "X-Frappe-CSRF-Token": window.csrf_token || "" },
-	});
-	window.location.href = "/login?redirect-to=/sky-immo";
-}
+const route = useRoute()
+watchEffect(() => {
+  document.title = route.meta.title ? `${t(route.meta.title)} · Sky-immo` : 'Sky-immo'
+})
 </script>

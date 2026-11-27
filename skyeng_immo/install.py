@@ -43,6 +43,13 @@ ROLES = [
 	("Technicien", "Interventions et maintenance des equipements."),
 ]
 
+# Sky Immo app roles. No desk access: landlords and tenants only use /sky-immo,
+# and read their data through skyeng_immo.sky_immo.api, never through doctypes.
+APP_ROLES = [
+	("Landlord", "Sky Immo: proprietaire, voit ses biens, baux, factures et paiements."),
+	("Tenant", "Sky Immo: locataire, voit son bail et ses factures, signale un probleme."),
+]
+
 
 def after_install():
 	setup()
@@ -55,14 +62,51 @@ def after_migrate():
 def setup():
 	create_roles()
 	install_asset_fields()
+	setup_sky_immo()
 
 
 def create_roles():
-	for name, desc in ROLES:
-		if frappe.db.exists("Role", name):
-			continue
-		frappe.get_doc({"doctype": "Role", "role_name": name, "desk_access": 1, "description": desc}).insert(
-			ignore_permissions=True
+	for roles, desk_access in ((ROLES, 1), (APP_ROLES, 0)):
+		for name, desc in roles:
+			if frappe.db.exists("Role", name):
+				continue
+			frappe.get_doc(
+				{"doctype": "Role", "role_name": name, "desk_access": desk_access, "description": desc}
+			).insert(ignore_permissions=True)
+
+
+def setup_sky_immo():
+	"""Issue types and priorities the tenant's request form maps to, and the email templates."""
+	from skyeng_immo.sky_immo.data import ISSUE_CATEGORIES
+	from skyeng_immo.sky_immo.notifications import ensure_email_templates
+
+	if frappe.db.exists("DocType", "Issue Type"):
+		for issue_type in ISSUE_CATEGORIES.values():
+			if not frappe.db.exists("Issue Type", issue_type):
+				frappe.get_doc({"doctype": "Issue Type", "__newname": issue_type}).insert(
+					ignore_permissions=True
+				)
+	if frappe.db.exists("DocType", "Issue Priority"):
+		for priority in ("Medium", "High"):
+			if not frappe.db.exists("Issue Priority", priority):
+				frappe.get_doc({"doctype": "Issue Priority", "__newname": priority}).insert(
+					ignore_permissions=True
+				)
+	ensure_email_templates()
+
+	# Accounts created before the User hook existed: open the app after sign-in.
+	app_users = frappe.get_all(
+		"Has Role",
+		filters={"role": ["in", [name for name, _desc in APP_ROLES]], "parenttype": "User"},
+		pluck="parent",
+	)
+	if app_users:
+		frappe.db.set_value(
+			"User",
+			{"name": ["in", app_users], "user_type": "Website User", "default_app": ["in", ["", None]]},
+			"default_app",
+			"skyeng_immo",
+			update_modified=False,
 		)
 
 

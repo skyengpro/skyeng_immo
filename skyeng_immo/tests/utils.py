@@ -17,19 +17,19 @@ def make_property(name: str, owner: str | None = None, parent: str | None = None
 	return create_property(name, company=COMPANY, unit_owner=owner, parent_property=parent, is_group=is_group)
 
 
-def make_lease(
-	property_name: str, tenant: str, payer: str | None = None, past: bool = False, **kwargs
-) -> str:
-	"""One-line monthly lease. With `past`, it ended a year ago, so PropMS sets it Expired."""
+def make_lease(property_name: str, tenant: str, past: bool = False, **kwargs) -> str:
+	"""One-line monthly lease. With `past`, it ended a year ago, so PropMS sets it Expired.
+
+	The tenant is the lease's single Customer (EP-01, checked by `validate_lease`).
+	"""
 	start = add_months(nowdate(), -24 if past else 0)
-	payer = payer or tenant
 	doc = frappe.get_doc(
 		{
 			"doctype": "Lease",
 			"property": property_name,
 			"lease_date": start,
 			"lease_customer": tenant,
-			"customer": payer,
+			"customer": tenant,
 			"start_date": start,
 			"end_date": add_months(start, 12),
 			"notice_period": 30,
@@ -40,7 +40,7 @@ def make_lease(
 					"frequency": "Monthly",
 					"amount": 100,
 					"currency_code": CURRENCY,
-					"paid_by": payer,
+					"paid_by": tenant,
 					"document_type": "Sales Invoice",
 				}
 			],
@@ -112,9 +112,10 @@ class SharedSite:
 		self.floor2 = make_property("_Test Immo Floor 2", parent=self.building2, is_group=1)
 		self.unit2a = make_property("_Test Immo Unit 2A", parent=self.floor2)
 
-		# Tenant 2 used to rent 1A; tenant 1 rents it now, paid by a third party.
+		# Tenant 2 used to rent 1A; tenant 1 rents it now. Its invoice is billed to a third party:
+		# invoices are found through the lease, whoever the payer is.
 		self.lease_old = make_lease(self.unit1a, c["Tenant 2"], past=True)
-		self.lease_1a = make_lease(self.unit1a, c["Tenant 1"], payer=c["Payer"])
+		self.lease_1a = make_lease(self.unit1a, c["Tenant 1"])
 		self.lease_2a = make_lease(self.unit2a, c["Tenant 2"])
 		self.lease_draft = make_lease(self.unit1b, c["Tenant 1"], lease_status="Draft")
 

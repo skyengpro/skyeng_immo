@@ -5,7 +5,7 @@ never decides for them. Every endpoint calls `get_scope` first, and `frappe.get_
 on names it returned.
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 import frappe
 from frappe.query_builder import Criterion, Order
@@ -13,6 +13,9 @@ from frappe.query_builder import Criterion, Order
 MANAGER_ROLES = frozenset({"System Manager", "Property Manager"})
 LANDLORD = "Landlord"
 TENANT = "Tenant"
+
+# Leases that never ran: never shown to anyone in the app.
+HIDDEN_LEASE_STATUSES = ("Draft", "Not Materialized")
 
 
 @dataclass(frozen=True)
@@ -24,16 +27,51 @@ class Scope:
 	owned_properties: frozenset[str]
 	# Properties on the user's own leases, as a tenant.
 	rented_properties: frozenset[str]
-	leases: frozenset[str]
+	# Leases of `owned_properties`, whoever the tenant is (past and current).
+	owned_leases: frozenset[str]
+	# The user's own leases, as a tenant.
+	rented_leases: frozenset[str]
 
 	@property
 	def properties(self) -> frozenset[str]:
 		return self.owned_properties | self.rented_properties
 
+	@property
+	def leases(self) -> frozenset[str]:
+		return self.owned_leases | self.rented_leases
+
 
 def is_manager(user: str | None = None) -> bool:
 	"""Property Manager or System Manager, who work in Desk and may see every property."""
 	return not MANAGER_ROLES.isdisjoint(frappe.get_roles(user))
+
+
+def app_space(user: str | None = None) -> str | None:
+	"""Home screen of the app: "manager", "owner", "tenant", or None without an app role.
+
+	Only picks the screens. What the user may read is `get_scope`, which unites every role held.
+	"""
+	user = user or frappe.session.user
+	if user == "Guest":
+		return None
+	if is_manager(user):
+		return "manager"
+	roles = frappe.get_roles(user)
+	if LANDLORD in roles:
+		return "owner"
+	if TENANT in roles:
+		return "tenant"
+	return None
+
+
+def owner_side(scope: Scope) -> Scope:
+	"""The landlord (or manager) part of a scope, for the landlord screens."""
+	return replace(scope, rented_properties=frozenset(), rented_leases=frozenset())
+
+
+def tenant_side(scope: Scope) -> Scope:
+	"""The tenant part of a scope, for the tenant screens."""
+	return replace(scope, owned_properties=frozenset(), owned_leases=frozenset())
 
 
 def get_scope(user: str | None = None) -> Scope:
@@ -59,7 +97,8 @@ def get_scope(user: str | None = None) -> Scope:
 		customers=customers,
 		owned_properties=owned,
 		rented_properties=frozenset(tenant_leases.values()),
-		leases=frozenset(owned_leases | tenant_leases),
+		owned_leases=frozenset(owned_leases),
+		rented_leases=frozenset(tenant_leases),
 	)
 
 
@@ -102,10 +141,10 @@ def get_owned_properties(customers: frozenset[str]) -> frozenset[str]:
 
 
 def find_leases(filters: dict) -> dict[str, str]:
-	"""Lease name -> property, for leases matching `filters`. Draft leases are never shown."""
+	"""Lease name -> property, for leases matching `filters`. Leases that never ran are not shown."""
 	rows = frappe.get_all(
 		"Lease",
-		filters={**filters, "lease_status": ["!=", "Draft"]},
+		filters={**filters, "lease_status": ["not in", HIDDEN_LEASE_STATUSES]},
 		fields=["name", "property"],
 	)
 	return {row.name: row.property for row in rows}
@@ -127,7 +166,12 @@ def get_leases(scope: Scope, fields: list[str]) -> list[dict]:
 
 
 def invoice_filters(scope: Scope) -> dict:
-	"""Submitted invoices of the leases in scope, whoever the payer is."""
+	"""Submitted invoices of the leases in scope, whoever the payer is.
+
+	Frappe turns `lease in []` into "invoices without a lease": an empty scope must match nothing.
+	"""
+	if not scope.leases:
+		return {"name": ["is", "not set"], "docstatus": 1}
 	return {"lease": ["in", list(scope.leases)], "docstatus": 1}
 
 
@@ -153,8 +197,13 @@ def check_invoice(scope: Scope, name: str) -> str:
 	return found
 
 
-def get_issues(scope: Scope, fields: list[str]) -> list[dict]:
-	"""Maintenance requests: all of an owned property's, and a tenant's own on their rented units."""
+def get_issues(
+	scope: Scope, fields: list[str], name: str | None = None, limit: int | None = None
+) -> list[dict]:
+	"""Maintenance requests: all of an owned property's, and a tenant's own on their rented units.
+
+	With `name`, the one request if it is in scope, else an empty list.
+	"""
 	issue = frappe.qb.DocType("Issue")
 	conditions = []
 	if scope.owned_properties:
@@ -174,4 +223,8 @@ def get_issues(scope: Scope, fields: list[str]) -> list[dict]:
 		.where(Criterion.any(conditions))
 		.orderby(issue.creation, order=Order.desc)
 	)
+	if name is not None:
+		query = query.where(issue.name == name)
+	if limit:
+		query = query.limit(limit)
 	return query.run(as_dict=True)

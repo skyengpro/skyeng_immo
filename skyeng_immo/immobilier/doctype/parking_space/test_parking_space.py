@@ -30,6 +30,23 @@ class TestParkingSpace(FrappeTestCase):
 		s = self._space("F03", allocated_to_unit=self.foreign_unit)
 		self.assertRaises(frappe.ValidationError, s.insert)
 
+	def test_parking_summary_counts_spaces_per_unit(self):
+		from skyeng_immo.immobilier.doctype.parking_space.parking_space import parking_summary
+
+		self._space("F05", allocated_to_unit=self.unit_a).insert()
+		self._space("F06", allocated_to_unit=self.unit_a).insert()
+		self._space("F07").insert()  # not allocated: not in the summary
+		spaces = frappe.get_all(
+			"Parking Space", filters={"property": self.site, "allocated_to_unit": self.unit_a}, pluck="name"
+		)
+		vehicles = frappe.db.count("Vehicle", {"parking_space": ["in", spaces], "is_active": 1})
+
+		rows = {row.unit: row for row in parking_summary(self.site)}
+		self.assertEqual(set(rows), {self.unit_a})
+		self.assertEqual(rows[self.unit_a].spaces, len(spaces))
+		self.assertEqual(rows[self.unit_a].vehicles, vehicles)
+		self.assertEqual(parking_summary(self.other_site), [])
+
 	def test_out_of_service_survives_allocation(self):
 		s = self._space("F04", status="Hors service").insert()
 		self.assertEqual(s.status, "Hors service")

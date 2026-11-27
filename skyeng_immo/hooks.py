@@ -23,7 +23,7 @@ add_to_apps_screen = [
 	{
 		"name": app_name,
 		"title": "Sky-immo",
-		"logo": "/assets/skyeng_immo/frontend/icons/icon-192.png",
+		"logo": "/assets/skyeng_immo/frontend/icon-192.png",
 		"route": "/sky-immo",
 		"has_permission": "skyeng_immo.navigation.has_app_permission",
 	}
@@ -32,17 +32,44 @@ add_to_apps_screen = [
 # Landing page after sign-in: managers of a customer-owned site go to the app.
 get_website_user_home_page = "skyeng_immo.navigation.get_home_page"
 
-# Landlords and tenants land on the app whoever gave them the role.
-doc_events = {"User": {"validate": "skyeng_immo.navigation.set_default_app"}}
-
-# "Invite to Sky-immo" button on the Customer form; ERPNext stays unchanged.
-doctype_js = {"Customer": "public/js/customer.js"}
-
 # Serves the built frontend at /sky-immo; every sub-route returns the same page.
 website_route_rules = [
 	{"from_route": "/sky-immo/<path:app_path>", "to_route": "sky_immo"},
 	{"from_route": "/sky-immo", "to_route": "sky_immo"},
 ]
+
+# --------------------------------------------------------------------------- #
+# Sky Immo: the landlord and tenant app (doc/app-usage-flows-immo.md)         #
+# --------------------------------------------------------------------------- #
+
+# The Vue app (frontend/, frappe-ui) is built into public/frontend and served as the page
+# www/sky_immo.html by www/sky_immo.py. It is a PWA: its service worker is re-served from
+# /sky-immo/sw.js so it controls the whole /sky-immo scope.
+page_renderer = ["skyeng_immo.sky_immo.service_worker.ServiceWorkerPage"]
+
+# The app used to live at /mon-immo: keep old links and bookmarks working.
+website_redirects = [
+	{"source": r"/mon-immo(/.*)?", "target": r"/sky-immo\1"},
+]
+
+# Data entry rules, the repair decision on Issue, and the rent receipts and notices.
+doc_events = {
+	"User": {"validate": "skyeng_immo.navigation.set_default_app"},
+	"Property": {"validate": "skyeng_immo.sky_immo.validation.validate_property"},
+	"Lease": {"validate": "skyeng_immo.sky_immo.validation.validate_lease"},
+	"Issue": {"on_update": "skyeng_immo.sky_immo.maintenance.on_issue_update"},
+	"Payment Entry": {"on_submit": "skyeng_immo.sky_immo.notifications.on_payment_entry_submit"},
+}
+
+# "Invite to Sky-immo" on the Customer form; Approve / Reject on the Issue form.
+doctype_js = {
+	"Customer": "public/js/customer.js",
+	"Issue": "public/js/issue_sky_immo.js",
+}
+
+scheduler_events = {
+	"daily": ["skyeng_immo.sky_immo.notifications.send_due_reminders"],
+}
 
 # Fixtures ship the dashboard so a fresh install brings the whole thing, not
 # just empty DocTypes. Order matters: cards, charts and reports must exist
@@ -101,6 +128,7 @@ fixtures = [
 		],
 	},
 	{"dt": "Report", "filters": [["module", "=", "Immobilier"], ["is_standard", "=", "No"]]},
+	{"dt": "Custom Field", "filters": [["name", "in", ["Issue-sky_immo_status"]]]},
 	{"dt": "Workspace", "filters": [["name", "=", "Immobilier"]]},
 	{"dt": "Workspace Sidebar", "filters": [["name", "=", "Immobilier"]]},
 	{"dt": "Desktop Icon", "filters": [["label", "=", "Immobilier"]]},

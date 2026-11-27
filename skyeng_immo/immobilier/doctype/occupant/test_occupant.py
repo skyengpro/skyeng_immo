@@ -1,6 +1,7 @@
 import frappe
 from frappe.tests.utils import FrappeTestCase
 from frappe.utils import add_days, today
+from propms.tests.utils import create_customer
 
 
 def _property(name, parent=None, is_group=0):
@@ -14,6 +15,8 @@ def _property(name, parent=None, is_group=0):
 				"name1": name,
 				"is_group": is_group,
 				"parent_property": parent,
+				# Sky-immo requires an owner on every property (or a parent).
+				"unit_owner": None if parent else create_customer("_Test Immo Owner"),
 				"company": company,
 				"cost_center": frappe.db.get_value("Cost Center", {"is_group": 0}, "name"),
 				"status": "On Lease",
