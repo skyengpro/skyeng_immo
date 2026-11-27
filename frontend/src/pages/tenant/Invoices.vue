@@ -22,8 +22,11 @@
           </RouterLink>
           <div class="flex shrink-0 flex-col items-end gap-1">
             <span class="whitespace-nowrap text-[14px] font-semibold text-ink tabular">{{ money(inv.total) }}</span>
-            <a :href="downloadUrl('invoice', inv.id)" target="_blank" rel="noopener" class="inline-flex items-center gap-1 rounded-full bg-sky-soft px-2.5 py-1 text-[12px] font-semibold text-sky hover:bg-sky-mid/20">
+            <a v-for="receipt in inv.receipts || []" :key="receipt" :href="downloadUrl('receipt', receipt)" target="_blank" rel="noopener" class="inline-flex items-center gap-1 rounded-full bg-sky-soft px-2.5 py-1 text-[12px] font-semibold text-sky hover:bg-sky-mid/20">
               <span class="lucide-download size-3.5" />{{ t('Receipt (PDF)') }}
+            </a>
+            <a v-if="!inv.receipts?.length" :href="downloadUrl('invoice', inv.id)" target="_blank" rel="noopener" class="inline-flex items-center gap-1 rounded-full bg-sky-soft px-2.5 py-1 text-[12px] font-semibold text-sky hover:bg-sky-mid/20">
+              <span class="lucide-download size-3.5" />{{ t('Invoice (PDF)') }}
             </a>
           </div>
         </li>

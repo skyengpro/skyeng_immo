@@ -1,6 +1,6 @@
 """The three Sky Immo emails that follow invoices and payments (EP-01, "Emails").
 
-* reminder to the tenant a few days before a due date (daily job);
+* reminder to the tenant a few days before a due date (hourly job, once per invoice);
 * receipt to the tenant when a payment is recorded in the desk;
 * notice to the landlord when a payment is recorded in the desk.
 
@@ -212,8 +212,12 @@ def _render(key: str, lang: str, context: dict) -> tuple[str, str]:
 	return template.get_formatted_subject(context), template.get_formatted_response(context)
 
 
-def send(key: str, recipients: list, context: dict, reference: tuple[str, str], attach=None):
-	"""One email per recipient, in their language. ``attach(lang)`` returns attachments."""
+def send(key: str, recipients: list, context: dict, reference: tuple[str, str], attach=None) -> int:
+	"""One email per recipient, in their language. ``attach(lang)`` returns attachments.
+
+	Returns how many emails were queued.
+	"""
+	queued = 0
 	for recipient in recipients:
 		if not recipient.email:
 			continue
@@ -231,6 +235,7 @@ def send(key: str, recipients: list, context: dict, reference: tuple[str, str], 
 					reference_doctype=reference[0],
 					reference_name=reference[1],
 				)
+				queued += 1
 			except frappe.OutgoingEmailError:
 				frappe.clear_last_message()
 				frappe.log_error(
@@ -238,7 +243,8 @@ def send(key: str, recipients: list, context: dict, reference: tuple[str, str], 
 					reference_doctype=reference[0],
 					reference_name=reference[1],
 				)
-				return
+				return queued
+	return queued
 
 
 def _money(amount, currency):
@@ -330,8 +336,12 @@ def send_payment_emails(payment_entry: str):
 
 
 def send_due_reminders():
-	"""Daily job: remind tenants of rent invoices falling due in REMINDER_DAYS days."""
-	target = add_days(today(), REMINDER_DAYS)
+	"""Hourly job: remind tenants, once per invoice, of rent falling due within REMINDER_DAYS days.
+
+	A window, not an exact date: without a Payment Terms Template, PropMS invoices are due on the
+	day they are created (at noon), and a run the scheduler misses must not lose its reminders. The day a
+	reminder goes out is kept on the invoice (``sky_immo_reminder_sent_on``), so it goes only once.
+	"""
 	invoices = frappe.get_all(
 		"Sales Invoice",
 		filters={
@@ -339,7 +349,8 @@ def send_due_reminders():
 			"is_return": 0,
 			"lease": ["is", "set"],
 			"outstanding_amount": [">", 0],
-			"due_date": target,
+			"due_date": ["between", [today(), add_days(today(), REMINDER_DAYS)]],
+			"sky_immo_reminder_sent_on": ["is", "not set"],
 		},
 		fields=[
 			"name",
@@ -372,8 +383,12 @@ def send_due_reminders():
 			}
 
 		try:
-			send(
+			sent = send(
 				"Due reminder", tenant_recipients(invoice.customer), context, ("Sales Invoice", invoice.name)
 			)
+			if sent:
+				frappe.db.set_value(
+					"Sales Invoice", invoice.name, "sky_immo_reminder_sent_on", today(), update_modified=False
+				)
 		except Exception:
 			frappe.log_error(f"Sky Immo: due reminder for {invoice.name}")

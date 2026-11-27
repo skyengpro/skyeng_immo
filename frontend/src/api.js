@@ -66,6 +66,24 @@ async function request(url, options, timeout) {
   return json.message
 }
 
+// Whose answers the device cache holds. Every entry is keyed by that user, so a copy kept for one
+// account is never shown to the next one, whichever way they signed in (this app, the desk,
+// an invitation link, a password reset). Nothing is read or written before the session is known.
+const OWNER_KEY = '__owner'
+let cacheUser = null
+
+/** Called once the signed-in user is known: drops the copies kept for anyone else. */
+export async function setCacheUser(user) {
+  cacheUser = user || null
+  if (!cacheUser) return
+  if ((await cache.get(OWNER_KEY)) !== cacheUser) {
+    await cache.clear()
+    await cache.set(OWNER_KEY, cacheUser)
+  }
+}
+
+const cacheKey = (method, url) => (cacheUser && method !== 'get_session' ? `${cacheUser}|${url}` : null)
+
 export async function get(method, params = {}) {
   const query = new URLSearchParams(Object.entries(params).filter(([, v]) => v !== undefined && v !== null && v !== '')).toString()
   const url = methodUrl(method) + (query ? `?${query}` : '')
@@ -73,11 +91,13 @@ export async function get(method, params = {}) {
     const data = await request(url, { headers: { Accept: 'application/json' } }, READ_TIMEOUT)
     net.stale = false
     net.freshAt = Date.now()
-    if (method !== 'get_session') cache.set(url, data)
+    const key = cacheKey(method, url)
+    if (key) cache.set(key, data)
     return data
   } catch (e) {
-    if (e instanceof OfflineError && method !== 'get_session') {
-      const kept = await cache.get(url)
+    const key = cacheKey(method, url)
+    if (e instanceof OfflineError && key) {
+      const kept = await cache.get(key)
       if (kept !== undefined) {
         net.stale = true
         return kept

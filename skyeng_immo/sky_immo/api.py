@@ -495,7 +495,54 @@ def list_invoices(tab: str = "unpaid") -> list[dict]:
 	scope = _scope()
 	filters = _invoice_filters(scope)
 	filters["outstanding_amount"] = [">", 0] if tab == "unpaid" else ["<=", 0]
-	return data.invoice_summaries(filters, _all_lease_properties(scope), {}, getdate(today()))
+	invoices = data.invoice_summaries(filters, _all_lease_properties(scope), {}, getdate(today()))
+	if tab != "unpaid":
+		receipts = _receipts(scope, [invoice["id"] for invoice in invoices])
+		for invoice in invoices:
+			invoice["receipts"] = receipts.get(invoice["id"], [])
+	return invoices
+
+
+def _receipts(scope: Scope, invoice_names: list[str]) -> dict[str, list[str]]:
+	"""Invoice -> the Payment Entries (receipts) the user may download for it.
+
+	Same rule as `download("receipt")`: a receipt is offered only when every invoice it settles is
+	in the user's scope.
+	"""
+	payments = data.payments_for(invoice_names)
+	if not payments:
+		return {}
+	entries = {p["id"] for p in payments}
+	settled = frappe.get_all(
+		"Payment Entry Reference",
+		filters={
+			"parent": ["in", list(entries)],
+			"parenttype": "Payment Entry",
+			"reference_doctype": "Sales Invoice",
+		},
+		fields=["parent", "reference_name"],
+		ignore_permissions=True,
+	)
+	visible = set(
+		frappe.get_all(
+			"Sales Invoice",
+			filters={
+				**_invoice_filters(scope),
+				"name": ["in", list({r.reference_name for r in settled}) or [""]],
+			},
+			pluck="name",
+		)
+	)
+	allowed = {
+		entry
+		for entry in entries
+		if all(r.reference_name in visible for r in settled if r.parent == entry)
+	}
+	result: dict[str, list[str]] = {}
+	for payment in payments:
+		if payment["id"] in allowed and payment["id"] not in result.get(payment["invoiceId"], []):
+			result.setdefault(payment["invoiceId"], []).append(payment["id"])
+	return result
 
 
 @frappe.whitelist(methods=["GET"])
@@ -732,16 +779,31 @@ def get_issue(name: str) -> dict:
 
 
 def _issue_photos(name: str) -> list[dict]:
-	"""Private files attached to a request, oldest first: the app opens them through `issue_photo`."""
+	"""The photos the tenant sent with a request (`create_issue`), oldest first.
+
+	Only those: staff uploads and inbound email attachments are also private files on the Issue,
+	and must not reach the tenant or the landlord. A photo is named `<issue>-photo-<n>.<ext>`
+	(`<issue>-photo.<ext>` before a request could hold several; Frappe may add a hash before the
+	extension when the name is taken on disk) and was saved by the account that created the request.
+	"""
+	creator = frappe.db.get_value("Issue", name, "owner")
+	extensions = "|".join(map(re.escape, PHOTO_FORMATS.values()))
+	pattern = re.compile(rf"^{re.escape(name)}-photo(?:-\d+)?[0-9a-zA-Z]*\.({extensions})$")
 	return [
 		{"id": f.name, "name": f.file_name}
 		for f in frappe.get_all(
 			"File",
-			filters={"attached_to_doctype": "Issue", "attached_to_name": name, "is_private": 1},
+			filters={
+				"attached_to_doctype": "Issue",
+				"attached_to_name": name,
+				"is_private": 1,
+				"owner": creator or "",
+			},
 			fields=["name", "file_name"],
 			order_by="creation asc",
 			ignore_permissions=True,
 		)
+		if pattern.match(f.file_name or "")
 	]
 
 

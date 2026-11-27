@@ -340,6 +340,7 @@ export default {
   'Once an invoice is paid, it becomes a receipt you can download here.': 'Une fois une facture payée, elle devient un reçu à télécharger ici.',
   'Total received': 'Total réglé',
   'Receipt (PDF)': 'Reçu (PDF)',
+  'Invoice (PDF)': 'Facture (PDF)',
   // maintenance answer, dashboard lists, unit details
   'Maintenance requests': 'Maintenances',
   'Maintenance in progress': 'Maintenances en cours',

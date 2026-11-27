@@ -918,3 +918,6 @@ msgstr "Décidé par"
 
 msgid "Decided on"
 msgstr "Décidé le"
+
+msgid "Rent reminder sent on"
+msgstr "Rappel de loyer envoyé le"

@@ -103,7 +103,7 @@ sequenceDiagram
     actor B as Landlord
 
     D->>D: On the schedule date, generates the invoice and submits it
-    D-->>L: Reminder email a few days before the due date
+    D-->>L: Reminder email once the due date is five days away or less
     alt The tenant pays
         L->>G: Pays outside the app (cash, transfer, MoMo)
         G->>D: Records the payment against the invoice
@@ -114,6 +114,10 @@ sequenceDiagram
         Note over D,B: The invoice stays unpaid. It appears in overdue invoices on the landlord's home and in the tenant's balance due.
     end
 ```
+
+The reminder goes once per unpaid invoice, from an hourly check, as soon as its due date is at most five days away. This includes an invoice due the day it is issued, the default when the customer has no payment terms. The day it was sent is shown on the invoice in the desk (Rent reminder sent on). It goes to the tenant's app accounts, or to the Customer's own email when they have none.
+
+In the app, each paid invoice offers its receipt (the Payment Entry) for download, as long as the payment settles only invoices the person may see.
 
 In mode B, a landlord exists only for properties managed for a third party. For the customer's own properties, the payment notice goes to the property manager.
 
