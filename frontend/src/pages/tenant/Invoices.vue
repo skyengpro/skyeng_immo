@@ -8,7 +8,7 @@
     <EmptyState v-else-if="!data.length" class="surface" :icon="tab === 'paid' ? 'lucide-receipt-text' : 'lucide-circle-check'"
       :title="tab === 'paid' ? t('No receipt yet') : t('Nothing to pay')" :text="tab === 'paid' ? t('Once an invoice is paid, it becomes a receipt you can download here.') : t('Every invoice is paid. Well done.')" />
     <template v-else>
-      <div class="mb-3 flex items-baseline justify-between rounded-[14px] px-4 py-3" :class="tab === 'paid' ? 'bg-ok-soft' : 'bg-paper-deep/70'">
+      <div class="mb-3 flex items-baseline justify-between rounded-app px-4 py-3" :class="tab === 'paid' ? 'bg-ok-soft' : 'bg-paper-deep/70'">
         <span class="text-[13.5px] text-ink-soft">{{ tab === 'paid' ? t('Total received') : t('Total to pay') }}</span>
         <span class="font-display text-[22px] text-ink tabular">{{ money(total) }}</span>
       </div>

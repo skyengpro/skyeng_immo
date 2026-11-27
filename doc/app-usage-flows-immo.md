@@ -204,7 +204,7 @@ sequenceDiagram
     D-->>A: Property Manager role: every property on the site
     A-->>G: Home: totals across all properties, including maintenance
     G->>A: Opens "My properties", "Tenants" or "Maintenance"
-    A-->>G: Same lists as for the landlord, grouped by landlord when the customer manages for third parties
+    A-->>G: Same lists as for the landlord. Properties and tenants of the customer's own Customer apart from those of third-party landlords, grouped by landlord
     G->>A: Approves or rejects a request on one of the customer's own properties (as a portal user of the customer's Customer)
     A->>D: Status updated
     Note over G,D: Anything else is changed in the desk, with the same account.

@@ -221,9 +221,22 @@ def _owner_of(prop, props: dict) -> str | None:
 	return None
 
 
+def _own_customers(scope: Scope) -> frozenset[str]:
+	"""Customers the user is a portal user of: the owners whose properties are "mine".
+
+	A landlord's scope already holds them. A manager's scope covers every property, so their
+	own Customers (in mode B, the customer's own company) are looked up the same way.
+	"""
+	return access.get_customers(scope.user) if access.is_manager(scope.user) else scope.customers
+
+
 @frappe.whitelist(methods=["GET"])
 def list_properties() -> dict:
-	"""Units of the scope, grouped by building; for staff, by landlord first."""
+	"""Units of the scope, grouped by building; for staff, by landlord first.
+
+	Each section says whether its owner is one of the user's own Customers (`mine`), so staff
+	see their own properties apart from the ones they manage for third parties.
+	"""
 	scope = _scope("owner")
 	on = getdate(today())
 	props, leases, _lease_property = _context(scope)
@@ -236,7 +249,10 @@ def list_properties() -> dict:
 
 	units = [prop for prop in props.values() if not prop.is_group]
 	owners = data.customer_names(owner_of(unit) for unit in units)
-	by_landlord = access.is_manager(scope.user) and len({owner_of(unit) for unit in units}) > 1
+	manager = access.is_manager(scope.user)
+	# staff: one section per owner, so their own properties can be told apart from third parties'
+	by_landlord = manager
+	mine = _own_customers(scope)
 
 	sections: dict = {}
 	for unit in units:  # ordered by tree position
@@ -247,6 +263,7 @@ def list_properties() -> dict:
 				"landlord": {"id": landlord_key, "name": owners.get(landlord_key, landlord_key)}
 				if landlord_key
 				else None,
+				"mine": not manager or landlord_key in mine,
 				"groups": {},
 			},
 		)
@@ -264,7 +281,7 @@ def list_properties() -> dict:
 	for key in sorted(sections, key=lambda value: (value is None, (owners.get(value) or "").lower())):
 		section = sections[key]
 		groups = sorted(section["groups"].values(), key=lambda group: group["building"] is None)
-		result.append({"landlord": section["landlord"], "groups": groups})
+		result.append({"landlord": section["landlord"], "mine": section["mine"], "groups": groups})
 	return {"byLandlord": by_landlord, "sections": result}
 
 
@@ -375,14 +392,18 @@ def list_tenants() -> dict:
 				row["units"].append(unit)
 
 	owners = {row["owner"] for row in rows.values()}
-	by_landlord = access.is_manager(scope.user) and len(owners) > 1
+	manager = access.is_manager(scope.user)
+	by_landlord = manager and len(owners) > 1
 	owner_names = data.customer_names(owners) if by_landlord else {}
+	mine = _own_customers(scope)
 	tenants = []
 	for row in sorted(rows.values(), key=lambda row: (not row["current"], row["name"].lower())):
 		owner = row.pop("owner")
 		row["landlord"] = (
 			{"id": owner, "name": owner_names.get(owner, owner)} if by_landlord and owner else None
 		)
+		# a tenant of the user's own properties, apart from those of the landlords staff manage
+		row["mine"] = not manager or owner in mine
 		tenants.append(row)
 	return {"byLandlord": by_landlord, "tenants": tenants}
 
@@ -414,16 +435,23 @@ def get_lease(name: str) -> dict:
 	labels = data.item_names(item.lease_item for item in items)
 
 	tenant_contact = {}
+	landlord = None
 	# Contact details for the landlord or manager of the property, not for the tenant themselves.
 	if name in scope.owned_leases and lease.customer:
 		tenant_contact = (
 			frappe.db.get_value("Customer", lease.customer, ["email_id", "mobile_no"], as_dict=True) or {}
 		)
+	# The landlord's name is for the owner side; a tenant does not see who owns the unit.
+	if name in scope.owned_leases and lease.property:
+		owner = maintenance.effective_owner(lease.property)
+		if owner:
+			landlord = {"id": owner, "name": data.customer_names([owner]).get(owner, owner)}
 
 	return {
 		**data.lease_summary(lease, items, tenants, props, on),
 		"tenantEmail": tenant_contact.get("email_id"),
 		"tenantPhone": tenant_contact.get("mobile_no"),
+		"landlord": landlord,
 		"noticeDays": lease.notice_period or 0,
 		"buildingName": prop.parent_property if prop else None,
 		"features": _features(prop) if prop else None,

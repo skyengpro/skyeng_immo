@@ -6,7 +6,7 @@
       <div class="absolute inset-0 bg-[radial-gradient(120%_80%_at_0%_0%,#1d5d96_0%,transparent_60%),radial-gradient(90%_70%_at_100%_100%,#0a2540_0%,transparent_70%)]" />
       <Skyline class="pointer-events-none absolute inset-x-0 bottom-0 hidden h-[34%] w-full text-white/[.07] lg:block" />
       <div class="relative flex h-full flex-col justify-between gap-3 px-6 py-4 sm:gap-10 sm:px-10 sm:py-7 lg:px-14 lg:py-12">
-        <Logo inverted mark-class="size-9 rounded-[10px] ring-1 ring-white/20 sm:size-11 sm:rounded-[12px]" />
+        <Logo inverted mark-class="size-9 rounded-app ring-1 ring-white/20 sm:size-11 sm:rounded-app" />
         <div class="max-w-[420px]">
           <p class="eyebrow mb-4 hidden !text-[#a9d4f7] sm:block">{{ t('Landlords and tenants') }}</p>
           <h1 class="max-w-[360px] font-display text-[24px] leading-[1.1] sm:max-w-none sm:text-[44px] lg:max-w-[380px] lg:text-[52px]">
@@ -51,7 +51,7 @@
                 </button>
               </span>
             </label>
-            <p v-if="error" role="alert" class="flex items-center gap-2 rounded-[12px] bg-alert-soft px-3.5 py-2.5 text-[13px] text-alert">
+            <p v-if="error" role="alert" class="flex items-center gap-2 rounded-app bg-alert-soft px-3.5 py-2.5 text-[13px] text-alert">
               <span class="lucide-circle-alert size-4 shrink-0" />{{ error }}
             </p>
             <Btn type="submit" variant="primary" size="lg" block :loading="loading" :label="t('Sign in')" class="!mt-6 sm:!mt-7" />

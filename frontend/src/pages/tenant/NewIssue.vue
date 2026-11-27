@@ -41,14 +41,14 @@
         <legend class="mb-3 flex items-center gap-3 font-display text-[22px] text-ink"><span class="step">{{ data.homes.length > 1 ? 4 : 3 }}</span>{{ t('Add photos') }} <span class="text-[13px] font-normal text-ink-mute">({{ t('optional') }})</span></legend>
         <input ref="file" type="file" accept="image/*" multiple class="sr-only" tabindex="-1" :aria-label="t('Add a photo')" @change="onPhotos" />
         <ul v-if="photos.length" class="grid grid-cols-2 gap-3">
-          <li v-for="(p, i) in photos" :key="i" class="relative overflow-hidden rounded-[14px] border border-line">
+          <li v-for="(p, i) in photos" :key="i" class="relative overflow-hidden rounded-app border border-line">
             <img :src="p" :alt="t('Photo {0}', i + 1)" class="aspect-[4/3] w-full object-cover" />
             <button type="button" class="absolute right-2 top-2 flex size-8 items-center justify-center rounded-full bg-ink/80 text-on-ink backdrop-blur hover:bg-ink" :aria-label="t('Remove photo {0}', i + 1)" @click="photos.splice(i, 1)">
               <span class="lucide-x size-4" />
             </button>
           </li>
         </ul>
-        <button v-if="photos.length < MAX_PHOTOS" type="button" class="flex min-h-28 w-full flex-col items-center justify-center gap-1 rounded-[18px] border-2 border-dashed border-line-strong bg-card/60 px-4 py-4 text-ink-mute transition hover:border-sky-mid hover:text-sky" @click="file.click()">
+        <button v-if="photos.length < MAX_PHOTOS" type="button" class="flex min-h-28 w-full flex-col items-center justify-center gap-1 rounded-app border-2 border-dashed border-line-strong bg-card/60 px-4 py-4 text-ink-mute transition hover:border-sky-mid hover:text-sky" @click="file.click()">
           <span class="lucide-camera size-7" />
           <span class="text-[15px] font-semibold text-ink">{{ photos.length ? t('Add another photo') : t('Take or choose a photo') }}</span>
           <span class="text-[12.5px]">{{ t('Up to {0} photos, images only, 5 MB each.', MAX_PHOTOS) }}</span>

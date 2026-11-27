@@ -14,7 +14,7 @@
       <Btn v-if="!isOwner" variant="primary" icon="lucide-plus" :label="t('Report a problem')" to="/locataire/maintenance/nouvelle" />
     </EmptyState>
     <template v-else>
-      <div v-if="isOwner && awaiting" class="rise mb-5 flex items-center gap-3 rounded-[16px] border border-warn/20 bg-warn-soft px-4 py-3 text-warn">
+      <div v-if="isOwner && awaiting" class="rise mb-5 flex items-center gap-3 rounded-app border border-warn/20 bg-warn-soft px-4 py-3 text-warn">
         <span class="lucide-hand size-5 shrink-0" />
         <p class="min-w-0 flex-1 text-[13.5px]"><b>{{ tn(awaiting, '{0} request waits for your decision', '{0} requests wait for your decision') }}</b></p>
       </div>

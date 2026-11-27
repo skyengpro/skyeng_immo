@@ -174,6 +174,40 @@ class TestAppEndpoints(IntegrationTestCase):
 		self.assertTrue(mine)
 		self.assertTrue(all(row["landlord"] for row in mine))
 
+	def test_manager_sees_their_own_customers_properties_and_tenants_apart(self):
+		# Mode B: the customer's staff is a portal user of the customer's own Customer (here Landlord 1).
+		s, c = self.site, self.site.customers
+		manager = make_user("_test_immo_manager_own_customer@example.com", ["Property Manager"])
+		link_portal_user(c["Landlord 1"], manager)
+		with self.set_user(manager):
+			sections = api.list_properties()["sections"]
+			tenants = {row["id"]: row for row in api.list_tenants()["tenants"]}
+
+		mine = {section["landlord"]["id"] for section in sections if section["mine"]}
+		self.assertEqual(mine, {c["Landlord 1"]})
+		self.assertIn(
+			c["Landlord 2"], {s["landlord"]["id"] for s in sections if s["landlord"] and not s["mine"]}
+		)
+		self.assertTrue(tenants[c["Tenant 1"]]["mine"])  # current tenant of unit 1A, Landlord 1's
+		self.assertFalse(tenants[c["Tenant 2"]]["mine"])  # current tenant of 2A, Landlord 2's
+
+		# without a Customer of their own, nothing is the manager's
+		with self.set_user(s.users["manager"]):
+			self.assertFalse(any(section["mine"] for section in api.list_properties()["sections"]))
+			self.assertFalse(any(row["mine"] for row in api.list_tenants()["tenants"]))
+
+	def test_landlord_sees_everything_as_their_own(self):
+		with self.set_user(self.site.users["landlord1"]):
+			self.assertTrue(all(section["mine"] for section in api.list_properties()["sections"]))
+			self.assertTrue(all(row["mine"] for row in api.list_tenants()["tenants"]))
+
+	def test_lease_names_the_landlord_to_the_owner_side_only(self):
+		s = self.site
+		with self.set_user(s.users["landlord1"]):
+			self.assertEqual(api.get_lease(s.lease_1a)["landlord"]["id"], s.customers["Landlord 1"])
+		with self.set_user(s.users["tenant1"]):
+			self.assertIsNone(api.get_lease(s.lease_1a)["landlord"])
+
 	def test_property_screen_lists_its_requests_and_its_units(self):
 		s = self.site
 		with self.set_user(s.users["landlord1"]):

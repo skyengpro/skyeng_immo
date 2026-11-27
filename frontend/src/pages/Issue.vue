@@ -33,7 +33,7 @@
           <ul v-if="data.photos?.length" class="mt-4 grid gap-3" :class="data.photos.length > 1 && 'sm:grid-cols-2'">
             <li v-for="(p, i) in data.photos" :key="p.id">
               <a :href="photoUrl(data.id, p.id)" target="_blank" rel="noopener">
-                <img :src="photoUrl(data.id, p.id)" :alt="t('Photo {0}', i + 1)" loading="lazy" class="max-h-80 w-full rounded-[14px] border border-line object-cover" />
+                <img :src="photoUrl(data.id, p.id)" :alt="t('Photo {0}', i + 1)" loading="lazy" class="max-h-80 w-full rounded-app border border-line object-cover" />
               </a>
             </li>
           </ul>
@@ -44,7 +44,7 @@
         <Panel :title="t('Answers from the property manager')" padded>
           <p v-if="!data.replies.length" class="text-[14px] text-ink-mute">{{ t('No answer yet. It will show here.') }}</p>
           <ul v-else class="space-y-3">
-            <li v-for="(r, i) in data.replies" :key="i" class="rounded-[14px] bg-paper-deep/70 p-3.5">
+            <li v-for="(r, i) in data.replies" :key="i" class="rounded-app bg-paper-deep/70 p-3.5">
               <div class="mb-1 flex flex-wrap items-baseline justify-between gap-2">
                 <span class="text-[13.5px] font-semibold text-ink">{{ r.author }}</span>
                 <span class="text-[12px] text-ink-mute">{{ date(r.at, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) }}</span>
