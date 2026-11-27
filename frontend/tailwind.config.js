@@ -26,6 +26,8 @@ export default {
         alert: { DEFAULT: v('alert'), soft: v('alert-soft') },
         info: { DEFAULT: v('info'), soft: v('info-soft') },
       },
+      // every rounded corner of the app, one value: --si-radius in src/style.css
+      borderRadius: { app: 'var(--si-radius)' },
       boxShadow: {
         card: '0 1px 2px rgb(var(--si-shadow) / .05), 0 1px 1px rgb(var(--si-shadow) / .03)',
         lift: '0 14px 34px -14px rgb(var(--si-shadow) / .28), 0 2px 6px rgb(var(--si-shadow) / .06)',

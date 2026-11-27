@@ -9,6 +9,8 @@
 
 /* Sky-immo colour tokens (RGB channels, used through tailwind.config.js) */
 :root {
+  /* one corner radius for every card, panel, banner and field of the app (Tailwind: rounded-app) */
+  --si-radius: 10px;
   --si-paper: 245 244 239;
   --si-paper-deep: 237 235 228;
   --si-card: 255 255 255;
@@ -145,7 +147,7 @@ textarea.form-textarea,
 .form-textarea,
 button[role='combobox'],
 [role='combobox'] input {
-  border-radius: 10px !important;
+  border-radius: var(--si-radius) !important;
 }
 
 /* dialog titles in the display serif, like page titles */
@@ -157,10 +159,10 @@ button[role='combobox'],
 }
 
 .surface {
-  @apply rounded-[18px] border border-line bg-card shadow-card;
+  @apply rounded-app border border-line bg-card shadow-card;
 }
 .field {
-  @apply h-12 w-full rounded-[12px] border border-line bg-card px-4 text-[15px] text-ink shadow-card outline-none transition placeholder:text-ink-faint focus:border-sky-mid focus:ring-4 focus:ring-sky-mid/15;
+  @apply h-12 w-full rounded-app border border-line bg-card px-4 text-[15px] text-ink shadow-card outline-none transition placeholder:text-ink-faint focus:border-sky-mid focus:ring-4 focus:ring-sky-mid/15;
 }
 
 .pb-safe {

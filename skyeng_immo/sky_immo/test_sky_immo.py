@@ -431,6 +431,33 @@ class TestSkyImmo(IntegrationTestCase):
 			api.issue_photo(created["id"])
 		self.assertFalse([i for i in api.list_issues() if i["id"] == created["id"]])
 
+	def test_staff_files_on_a_request_are_not_shown_as_photos(self):
+		"""A quote attached in the desk, or an email attachment, stays with the staff."""
+		self.as_user(self.user_t1)
+		created = api.create_issue(description="Fuite", photos=[PIXEL])
+		frappe.set_user("Administrator")
+		for file_name in ("devis-plombier.pdf", f"{created['id']}-photo-9.png"):
+			frappe.get_doc(
+				{
+					"doctype": "File",
+					"file_name": file_name,
+					"attached_to_doctype": "Issue",
+					"attached_to_name": created["id"],
+					"is_private": 1,
+					"content": base64.b64decode(PIXEL.split(",", 1)[1]),
+				}
+			).insert(ignore_permissions=True)
+		for user in (self.user_t1, self.user_a):
+			self.as_user(user)
+			photos = api.get_issue(created["id"])["photos"]
+			self.assertEqual(len(photos), 1)
+			self.assertTrue(photos[0]["name"].startswith(f"{created['id']}-photo-1"))
+			staff_file = frappe.db.get_value(
+				"File", {"attached_to_name": created["id"], "file_name": ["like", "devis-plombier%"]}
+			)
+			with self.assertRaises(frappe.DoesNotExistError):
+				api.issue_photo(created["id"], staff_file)
+
 	def test_title_is_optional_description_is_not(self):
 		self.as_user(self.user_t1)
 		with self.assertRaises(frappe.ValidationError):
@@ -506,6 +533,66 @@ class TestSkyImmo(IntegrationTestCase):
 			api.complete_issue(name)
 		self.assertFalse(maintenance.can_complete(name, self.user_t1))
 
+	def test_owner_answers_the_tenant_with_their_decision(self):
+		from skyeng_immo.sky_immo import maintenance
+
+		self.as_user(self.user_t1)
+		name = api.create_issue(description="Fuite")["id"]
+		self.assertIsNone(api.get_issue(name)["answer"])
+
+		# too long: refused, and the request still awaits a decision
+		self.as_user(self.user_a)
+		with self.assertRaises(frappe.ValidationError):
+			api.decide_issue(name, "approve", "x" * (maintenance.NOTE_MAX_LENGTH + 1))
+		self.assertEqual(frappe.db.get_value("Issue", name, "sky_immo_status"), maintenance.AWAITING)
+
+		api.decide_issue(name, "approve", "  Le plombier passe mardi.  ")
+		owner_view = api.get_issue(name)
+		self.assertTrue(owner_view["answersAsOwner"])
+		self.assertEqual(owner_view["answer"]["decision"], "approved")
+		self.assertEqual(owner_view["answer"]["message"], "Le plombier passe mardi.")
+		self.assertTrue(owner_view["answer"]["author"])
+		self.assertTrue(owner_view["answer"]["at"])
+
+		# the tenant reads the answer, but not who owns the unit
+		self.as_user(self.user_t1)
+		tenant_view = api.get_issue(name)
+		self.assertFalse(tenant_view["answersAsOwner"])
+		self.assertEqual(tenant_view["answer"]["message"], "Le plombier passe mardi.")
+		self.assertIsNone(tenant_view["answer"]["author"])
+
+		# staff who are not linked to the owner read it as the landlord's answer
+		self.as_user(self.user_pm)
+		self.assertFalse(api.get_issue(name)["answersAsOwner"])
+
+	def test_rejection_without_a_message(self):
+		self.as_user(self.user_t1)
+		name = api.create_issue(description="Peinture")["id"]
+		self.as_user(self.user_a)
+		api.decide_issue(name, "reject")
+		self.as_user(self.user_t1)
+		answer = api.get_issue(name)["answer"]
+		self.assertEqual(answer["decision"], "rejected")
+		self.assertIsNone(answer["message"])
+
+	def test_tenant_sees_what_their_unit_is_like(self):
+		doc = frappe.get_doc("Property", self.unit_a1)
+		doc.db_set({"bedroom": 2, "no_of_parking": 1, "smoking": 0, "description": "<p>Calme</p>"})
+		doc.append("amenity_name", {"amenity_name": "Elevator"})
+		for row in doc.amenity_name:
+			row.db_insert()
+		self.as_user(self.user_t1)
+		features = api.get_lease(self.lease_1)["features"]
+		self.assertEqual(features["amenities"], ["Elevator"])
+		self.assertEqual(features["parking"], 1)
+		self.assertFalse(features["smoking"])
+		self.assertEqual(features["description"], "Calme")
+		# lists keep the short facts, to tell several units apart
+		listed = api.list_my_leases()[0]["features"]
+		self.assertEqual(listed["bedrooms"], 2)
+		self.assertNotIn("amenities", listed)
+		self.assertEqual(api.get_tenant_home()["homes"][0]["features"]["bedrooms"], 2)
+
 	def test_next_due_is_the_oldest_unpaid_invoice(self):
 		self.as_user(self.user_t1)
 		home = api.get_tenant_home()
@@ -547,19 +634,73 @@ class TestSkyImmo(IntegrationTestCase):
 		# The tenant's receipt carries the PDF; the landlord's notice does not.
 		self.assertEqual(sum(1 for q in queued if q.attachments and q.attachments != "[]"), 1)
 
-	def test_due_reminder(self):
-		frappe.db.set_value("Sales Invoice", self.inv_b, "due_date", add_days(today(), 5))
-		send_due_reminders()
-		queued = frappe.get_all(
+	def test_paid_invoices_offer_their_receipt(self):
+		self.as_user(self.user_t1)
+		paid = {inv["id"]: inv for inv in api.list_invoices("paid")}
+		self.assertEqual(paid[self.inv_paid]["receipts"], [self.payment])
+		self.assertNotIn("receipts", api.list_invoices("unpaid")[0])
+		# Allowed: a PDF, or the printable page when the PDF engine is not available.
+		api.download("receipt", self.payment)
+		# The other tenant gets no receipt of tenant 1's payment.
+		self.as_user(self.user_t2)
+		self.assertNotIn(self.inv_paid, {inv["id"] for inv in api.list_invoices("paid")})
+		with self.assertRaises(frappe.DoesNotExistError):
+			api.download("receipt", self.payment)
+
+	def _reminders(self, invoice):
+		return frappe.get_all(
 			"Email Queue",
-			filters={"reference_doctype": "Sales Invoice", "reference_name": self.inv_b},
+			filters={"reference_doctype": "Sales Invoice", "reference_name": invoice},
 			pluck="name",
 		)
+
+	def test_due_reminder(self):
+		frappe.db.set_value(
+			"Sales Invoice", self.inv_b, {"due_date": add_days(today(), 5), "sky_immo_reminder_sent_on": None}
+		)
+		frappe.db.delete("Email Queue", {"reference_doctype": "Sales Invoice", "reference_name": self.inv_b})
+		send_due_reminders()
+		queued = self._reminders(self.inv_b)
 		self.assertEqual(len(queued), 1)
 		self.assertEqual(
 			frappe.get_all("Email Queue Recipient", filters={"parent": queued[0]}, pluck="recipient"),
 			[self.user_t2],
 		)
+		self.assertEqual(
+			getdate(frappe.db.get_value("Sales Invoice", self.inv_b, "sky_immo_reminder_sent_on")),
+			getdate(today()),
+		)
+		# The next day's run does not remind the tenant again.
+		send_due_reminders()
+		self.assertEqual(len(self._reminders(self.inv_b)), 1)
+
+	def test_due_reminder_for_rent_due_the_day_it_is_invoiced(self):
+		"""PropMS invoices without payment terms are due on their posting date, created at noon."""
+		# The job runs hourly, so an invoice created after a run is still caught the same day.
+		self.assertIn(
+			"skyeng_immo.sky_immo.notifications.send_due_reminders",
+			frappe.get_hooks("scheduler_events", app_name="skyeng_immo").get("hourly", []),
+		)
+		frappe.db.set_value(
+			"Sales Invoice",
+			self.inv_b,
+			{"due_date": add_days(today(), 30), "sky_immo_reminder_sent_on": None},
+		)
+		frappe.db.delete("Email Queue", {"reference_doctype": "Sales Invoice", "reference_name": self.inv_b})
+		send_due_reminders()  # the morning run, before the invoice is due
+		self.assertEqual(self._reminders(self.inv_b), [])
+		frappe.db.set_value("Sales Invoice", self.inv_b, "due_date", today())  # issued at noon, due today
+		send_due_reminders()
+		self.assertEqual(len(self._reminders(self.inv_b)), 1)
+
+	def test_no_reminder_outside_the_window(self):
+		frappe.db.delete("Email Queue", {"reference_doctype": "Sales Invoice", "reference_name": self.inv_b})
+		for due in (add_days(today(), 6), add_days(today(), -1)):
+			frappe.db.set_value(
+				"Sales Invoice", self.inv_b, {"due_date": due, "sky_immo_reminder_sent_on": None}
+			)
+			send_due_reminders()
+		self.assertEqual(self._reminders(self.inv_b), [])
 
 	def test_one_payment_for_two_landlords_stays_separated(self):
 		"""A tenant renting from A and B settles both invoices in one Payment Entry."""

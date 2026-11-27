@@ -103,7 +103,7 @@ sequenceDiagram
     actor B as Landlord
 
     D->>D: On the schedule date, generates the invoice and submits it
-    D-->>L: Reminder email a few days before the due date
+    D-->>L: Reminder email once the due date is five days away or less
     alt The tenant pays
         L->>G: Pays outside the app (cash, transfer, MoMo)
         G->>D: Records the payment against the invoice
@@ -114,6 +114,10 @@ sequenceDiagram
         Note over D,B: The invoice stays unpaid. It appears in overdue invoices on the landlord's home and in the tenant's balance due.
     end
 ```
+
+The reminder goes once per unpaid invoice, from an hourly check, as soon as its due date is at most five days away. This includes an invoice due the day it is issued, the default when the customer has no payment terms. The day it was sent is shown on the invoice in the desk (Rent reminder sent on). It goes to the tenant's app accounts, or to the Customer's own email when they have none.
+
+In the app, each paid invoice offers its receipt (the Payment Entry) for download, as long as the payment settles only invoices the person may see.
 
 In mode B, a landlord exists only for properties managed for a third party. For the customer's own properties, the payment notice goes to the property manager.
 
@@ -141,20 +145,22 @@ sequenceDiagram
     D-->>B: The request appears on the landlord's home and in their maintenance list
     B->>A: Opens the request: unit, tenant, description, photo
     alt The landlord approves
-        B->>A: Approves
+        B->>A: Approves, with an optional message for the tenant
         A->>D: Status "In progress"
-        D-->>L: The tenant sees "In progress"
+        D-->>L: The tenant sees "In progress" and the landlord's message
         Note over L,B: The work is organised outside the app.
         L->>A: Marks the request as completed once the work is done
         A->>D: Status "Completed"
         D-->>B: The landlord sees "Completed"
     else The landlord rejects
-        B->>A: Rejects
+        B->>A: Rejects, with an optional message for the tenant
         A->>D: Status "Rejected"
-        D-->>L: The tenant sees "Rejected"
+        D-->>L: The tenant sees "Rejected" and the landlord's message
     end
     Note over D: Staff see every request in the desk, whatever its status.
 ```
+
+With the decision, the landlord can leave the tenant a message of up to 250 characters. It is kept on the request (`sky_immo_decision_note`, with `sky_immo_decided_by` and `sky_immo_decided_on`) and shown on both sides: "Your answer" for the landlord, "Answers from the landlord" for the tenant. The tenant does not see the landlord's name. The request is not a conversation: there is one answer, given with the decision.
 
 Only a user linked to the owner of the property decides: a portal user of the Customer set as `unit_owner` on the property or on its nearest parent. In mode B, the customer's own properties have the customer's own Customer as owner, so a property manager decides on them by being a portal user of that Customer.
 
@@ -172,7 +178,7 @@ sequenceDiagram
     B->>A: Signs in
     A->>D: Asks for visible properties
     D-->>A: Landlord role: their properties and units
-    A-->>B: Home: properties, tenants, collected this month, total unpaid, overdue invoices, maintenance awaiting approval and in progress
+    A-->>B: Home: properties, tenants, collected this month, total unpaid, occupancy, overdue invoices, maintenance awaiting approval and in progress
     B->>A: Opens "My properties"
     A-->>B: Tree by building. For each unit: status, tenant, rent
     B->>A: Opens a property
@@ -204,7 +210,7 @@ sequenceDiagram
     D-->>A: Property Manager role: every property on the site
     A-->>G: Home: totals across all properties, including maintenance
     G->>A: Opens "My properties", "Tenants" or "Maintenance"
-    A-->>G: Same lists as for the landlord, grouped by landlord when the customer manages for third parties
+    A-->>G: Same lists as for the landlord. Properties and tenants of the customer's own Customer apart from those of third-party landlords, grouped by landlord
     G->>A: Approves or rejects a request on one of the customer's own properties (as a portal user of the customer's Customer)
     A->>D: Status updated
     Note over G,D: Anything else is changed in the desk, with the same account.
@@ -228,9 +234,9 @@ sequenceDiagram
     D-->>A: Tenant role: their units and leases
     A-->>L: Home: units occupied, balance due, next due date, latest maintenance request
     L->>A: Opens "My properties"
-    A-->>L: Every unit they occupy: building, unit, rent, lease end
+    A-->>L: Every unit they occupy: building, unit, what it is (type, bedrooms, area), rent, lease end
     L->>A: Opens a unit
-    A-->>L: Unit details, lease dates, rent and frequency, deposit, schedule with the status of each line
+    A-->>L: Unit details (type, rooms, area, parking, furnished, smoking, amenities, description), lease dates, rent and frequency, deposit, schedule with the status of each line
     L->>A: Opens "Invoices and receipts"
     A-->>L: Invoices to pay and paid, across all their units
     L->>A: Downloads an invoice or a receipt

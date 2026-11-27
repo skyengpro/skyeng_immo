@@ -221,9 +221,22 @@ def _owner_of(prop, props: dict) -> str | None:
 	return None
 
 
+def _own_customers(scope: Scope) -> frozenset[str]:
+	"""Customers the user is a portal user of: the owners whose properties are "mine".
+
+	A landlord's scope already holds them. A manager's scope covers every property, so their
+	own Customers (in mode B, the customer's own company) are looked up the same way.
+	"""
+	return access.get_customers(scope.user) if access.is_manager(scope.user) else scope.customers
+
+
 @frappe.whitelist(methods=["GET"])
 def list_properties() -> dict:
-	"""Units of the scope, grouped by building; for staff, by landlord first."""
+	"""Units of the scope, grouped by building; for staff, by landlord first.
+
+	Each section says whether its owner is one of the user's own Customers (`mine`), so staff
+	see their own properties apart from the ones they manage for third parties.
+	"""
 	scope = _scope("owner")
 	on = getdate(today())
 	props, leases, _lease_property = _context(scope)
@@ -236,7 +249,10 @@ def list_properties() -> dict:
 
 	units = [prop for prop in props.values() if not prop.is_group]
 	owners = data.customer_names(owner_of(unit) for unit in units)
-	by_landlord = access.is_manager(scope.user) and len({owner_of(unit) for unit in units}) > 1
+	manager = access.is_manager(scope.user)
+	# staff: one section per owner, so their own properties can be told apart from third parties'
+	by_landlord = manager
+	mine = _own_customers(scope)
 
 	sections: dict = {}
 	for unit in units:  # ordered by tree position
@@ -247,6 +263,7 @@ def list_properties() -> dict:
 				"landlord": {"id": landlord_key, "name": owners.get(landlord_key, landlord_key)}
 				if landlord_key
 				else None,
+				"mine": not manager or landlord_key in mine,
 				"groups": {},
 			},
 		)
@@ -264,19 +281,34 @@ def list_properties() -> dict:
 	for key in sorted(sections, key=lambda value: (value is None, (owners.get(value) or "").lower())):
 		section = sections[key]
 		groups = sorted(section["groups"].values(), key=lambda group: group["building"] is None)
-		result.append({"landlord": section["landlord"], "groups": groups})
+		result.append({"landlord": section["landlord"], "mine": section["mine"], "groups": groups})
 	return {"byLandlord": by_landlord, "sections": result}
 
 
-def _features(prop) -> dict:
-	"""What the unit is like, for the landlord's property screen and the tenant's lease screen."""
-	return {
+def _features(prop, detailed: bool = True) -> dict:
+	"""What the unit is like, for the landlord's property screen and the tenant's lease screen.
+
+	The fields of the desk form that matter to someone living there. Meters, assets, increment
+	rules and the like stay in the desk. `detailed=False` keeps the short facts, for lists.
+	"""
+	features = {
 		"type": prop.type,
 		"bedrooms": prop.bedroom or 0,
+		"masterBedrooms": prop.master_bedroom or 0,
 		"bathrooms": prop.common_bathroom or 0,
 		"area": flt(prop.builtup_area),
 		"furnished": bool(prop.furnished),
 	}
+	if detailed:
+		features.update(
+			{
+				"parking": prop.no_of_parking or 0,
+				"smoking": bool(prop.smoking),
+				"amenities": data.amenities(prop.name),
+				"description": html.unescape(strip_html(prop.description or "")).strip() or None,
+			}
+		)
+	return features
 
 
 @frappe.whitelist(methods=["GET"])
@@ -375,14 +407,18 @@ def list_tenants() -> dict:
 				row["units"].append(unit)
 
 	owners = {row["owner"] for row in rows.values()}
-	by_landlord = access.is_manager(scope.user) and len(owners) > 1
+	manager = access.is_manager(scope.user)
+	by_landlord = manager and len(owners) > 1
 	owner_names = data.customer_names(owners) if by_landlord else {}
+	mine = _own_customers(scope)
 	tenants = []
 	for row in sorted(rows.values(), key=lambda row: (not row["current"], row["name"].lower())):
 		owner = row.pop("owner")
 		row["landlord"] = (
 			{"id": owner, "name": owner_names.get(owner, owner)} if by_landlord and owner else None
 		)
+		# a tenant of the user's own properties, apart from those of the landlords staff manage
+		row["mine"] = not manager or owner in mine
 		tenants.append(row)
 	return {"byLandlord": by_landlord, "tenants": tenants}
 
@@ -414,16 +450,23 @@ def get_lease(name: str) -> dict:
 	labels = data.item_names(item.lease_item for item in items)
 
 	tenant_contact = {}
+	landlord = None
 	# Contact details for the landlord or manager of the property, not for the tenant themselves.
 	if name in scope.owned_leases and lease.customer:
 		tenant_contact = (
 			frappe.db.get_value("Customer", lease.customer, ["email_id", "mobile_no"], as_dict=True) or {}
 		)
+	# The landlord's name is for the owner side; a tenant does not see who owns the unit.
+	if name in scope.owned_leases and lease.property:
+		owner = maintenance.effective_owner(lease.property)
+		if owner:
+			landlord = {"id": owner, "name": data.customer_names([owner]).get(owner, owner)}
 
 	return {
 		**data.lease_summary(lease, items, tenants, props, on),
 		"tenantEmail": tenant_contact.get("email_id"),
 		"tenantPhone": tenant_contact.get("mobile_no"),
+		"landlord": landlord,
 		"noticeDays": lease.notice_period or 0,
 		"buildingName": prop.parent_property if prop else None,
 		"features": _features(prop) if prop else None,
@@ -452,7 +495,52 @@ def list_invoices(tab: str = "unpaid") -> list[dict]:
 	scope = _scope()
 	filters = _invoice_filters(scope)
 	filters["outstanding_amount"] = [">", 0] if tab == "unpaid" else ["<=", 0]
-	return data.invoice_summaries(filters, _all_lease_properties(scope), {}, getdate(today()))
+	invoices = data.invoice_summaries(filters, _all_lease_properties(scope), {}, getdate(today()))
+	if tab != "unpaid":
+		receipts = _receipts(scope, [invoice["id"] for invoice in invoices])
+		for invoice in invoices:
+			invoice["receipts"] = receipts.get(invoice["id"], [])
+	return invoices
+
+
+def _receipts(scope: Scope, invoice_names: list[str]) -> dict[str, list[str]]:
+	"""Invoice -> the Payment Entries (receipts) the user may download for it.
+
+	Same rule as `download("receipt")`: a receipt is offered only when every invoice it settles is
+	in the user's scope.
+	"""
+	payments = data.payments_for(invoice_names)
+	if not payments:
+		return {}
+	entries = {p["id"] for p in payments}
+	settled = frappe.get_all(
+		"Payment Entry Reference",
+		filters={
+			"parent": ["in", list(entries)],
+			"parenttype": "Payment Entry",
+			"reference_doctype": "Sales Invoice",
+		},
+		fields=["parent", "reference_name"],
+		ignore_permissions=True,
+	)
+	visible = set(
+		frappe.get_all(
+			"Sales Invoice",
+			filters={
+				**_invoice_filters(scope),
+				"name": ["in", list({r.reference_name for r in settled}) or [""]],
+			},
+			pluck="name",
+		)
+	)
+	allowed = {
+		entry for entry in entries if all(r.reference_name in visible for r in settled if r.parent == entry)
+	}
+	result: dict[str, list[str]] = {}
+	for payment in payments:
+		if payment["id"] in allowed and payment["id"] not in result.get(payment["invoiceId"], []):
+			result.setdefault(payment["invoiceId"], []).append(payment["id"])
+	return result
 
 
 @frappe.whitelist(methods=["GET"])
@@ -578,6 +666,9 @@ def get_tenant_home() -> dict:
 			{
 				"leaseId": lease.name,
 				"property": data.ref_for(lease.property, props),
+				"features": _features(props[lease.property], detailed=False)
+				if lease.property in props
+				else None,
 				"endDate": data.iso(lease.end_date),
 			}
 			for lease in current
@@ -593,6 +684,10 @@ def list_my_leases() -> list[dict]:
 	on = getdate(today())
 	props, leases, _lease_property = _context(scope)
 	summaries = data.lease_summaries(leases, props, on)
+	# a tenant renting several units tells them apart by what they are like
+	for summary in summaries:
+		prop = props.get(summary["property"]["id"])
+		summary["features"] = _features(prop, detailed=False) if prop else None
 	return sorted(summaries, key=lambda lease: lease["status"] not in ("active", "notice_given"))
 
 
@@ -634,7 +729,17 @@ def _add_landlords(issues: list[dict], scope: Scope) -> None:
 def get_issue(name: str) -> dict:
 	scope = _scope()
 	rows = access.get_issues(
-		scope, [*data.ISSUE_FIELDS, "description", "resolution_details", "attachment"], name=name
+		scope,
+		[
+			*data.ISSUE_FIELDS,
+			"description",
+			"resolution_details",
+			"attachment",
+			"sky_immo_decision_note",
+			"sky_immo_decided_by",
+			"sky_immo_decided_on",
+		],
+		name=name,
 	)
 	if not rows:
 		_not_found()
@@ -643,18 +748,19 @@ def get_issue(name: str) -> dict:
 	owner_view = row.property_name in scope.owned_properties
 	owner = maintenance.effective_owner(row.property_name) if owner_view else None
 
-	replies = frappe.get_all(
-		"Communication",
-		filters={
-			"reference_doctype": "Issue",
-			"reference_name": name,
-			"communication_type": "Communication",
-			"sent_or_received": "Sent",
-		},
-		fields=["sender_full_name", "sender", "content", "communication_date"],
-		order_by="communication_date asc",
-		ignore_permissions=True,
-	)
+	# The owner's answer, left with their decision. A tenant is not told who owns the unit, so on
+	# their side the answer is not signed with a name. Decisions made before answers were kept
+	# have no date or message, only the decision.
+	answer = None
+	if row.sky_immo_status not in (None, "", maintenance.AWAITING):
+		answer = {
+			"decision": "rejected" if row.sky_immo_status == maintenance.REJECTED else "approved",
+			"message": row.sky_immo_decision_note or None,
+			"author": frappe.utils.get_fullname(row.sky_immo_decided_by)
+			if owner_view and row.sky_immo_decided_by
+			else None,
+			"at": str(row.sky_immo_decided_on).replace(" ", "T") if row.sky_immo_decided_on else None,
+		}
 	return {
 		**data.issue_summary(row, {}),
 		"description": html.unescape(strip_html(row.description or "")).strip(),
@@ -664,28 +770,38 @@ def get_issue(name: str) -> dict:
 		"canDecide": maintenance.can_decide(name, scope.user),
 		"canComplete": maintenance.can_complete(name, scope.user),
 		"landlordName": frappe.db.get_value("Customer", owner, "customer_name") if owner else None,
-		"replies": [
-			{
-				"author": reply.sender_full_name or reply.sender,
-				"message": html.unescape(strip_html(reply.content or "")).strip(),
-				"at": str(reply.communication_date).replace(" ", "T"),
-			}
-			for reply in replies
-		],
+		# the signed-in user is the one who answers (or answered): "Your answer" rather than "The landlord's"
+		"answersAsOwner": owner_view and maintenance.is_linked_to(scope.user, owner),
+		"answer": answer,
 	}
 
 
 def _issue_photos(name: str) -> list[dict]:
-	"""Private files attached to a request, oldest first: the app opens them through `issue_photo`."""
+	"""The photos the tenant sent with a request (`create_issue`), oldest first.
+
+	Only those: staff uploads and inbound email attachments are also private files on the Issue,
+	and must not reach the tenant or the landlord. A photo is named `<issue>-photo-<n>.<ext>`
+	(`<issue>-photo.<ext>` before a request could hold several; Frappe may add a hash before the
+	extension when the name is taken on disk) and was saved by the account that created the request.
+	"""
+	creator = frappe.db.get_value("Issue", name, "owner")
+	extensions = "|".join(re.escape(ext) for ext in PHOTO_FORMATS.values())
+	pattern = re.compile(rf"^{re.escape(name)}-photo(?:-\d+)?[0-9a-zA-Z]*\.({extensions})$")
 	return [
 		{"id": f.name, "name": f.file_name}
 		for f in frappe.get_all(
 			"File",
-			filters={"attached_to_doctype": "Issue", "attached_to_name": name, "is_private": 1},
+			filters={
+				"attached_to_doctype": "Issue",
+				"attached_to_name": name,
+				"is_private": 1,
+				"owner": creator or "",
+			},
 			fields=["name", "file_name"],
 			order_by="creation asc",
 			ignore_permissions=True,
 		)
+		if pattern.match(f.file_name or "")
 	]
 
 
@@ -720,10 +836,10 @@ def issue_photo(name: str, file: str | None = None):
 
 
 @frappe.whitelist(methods=["POST"])
-def decide_issue(name: str, decision: str) -> dict:
-	"""Landlord approves or rejects a request awaiting approval (the app's button)."""
+def decide_issue(name: str, decision: str, note: str | None = None) -> dict:
+	"""Landlord approves or rejects a request awaiting approval (the app's button), with a message."""
 	_scope("owner")
-	return maintenance.decide(name, decision)
+	return maintenance.decide(name, decision, note)
 
 
 @frappe.whitelist(methods=["POST"])

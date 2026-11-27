@@ -67,8 +67,10 @@ doctype_js = {
 	"Issue": "public/js/issue_sky_immo.js",
 }
 
+# Hourly, not daily: PropMS creates rent invoices at noon, often due that same day, after a
+# midnight run. Each invoice is reminded once (Sales Invoice.sky_immo_reminder_sent_on).
 scheduler_events = {
-	"daily": ["skyeng_immo.sky_immo.notifications.send_due_reminders"],
+	"hourly": ["skyeng_immo.sky_immo.notifications.send_due_reminders"],
 }
 
 # Fixtures ship the dashboard so a fresh install brings the whole thing, not
@@ -128,7 +130,22 @@ fixtures = [
 		],
 	},
 	{"dt": "Report", "filters": [["module", "=", "Immobilier"], ["is_standard", "=", "No"]]},
-	{"dt": "Custom Field", "filters": [["name", "in", ["Issue-sky_immo_status"]]]},
+	{
+		"dt": "Custom Field",
+		"filters": [
+			[
+				"name",
+				"in",
+				[
+					"Issue-sky_immo_status",
+					"Issue-sky_immo_decision_note",
+					"Issue-sky_immo_decided_by",
+					"Issue-sky_immo_decided_on",
+					"Sales Invoice-sky_immo_reminder_sent_on",
+				],
+			]
+		],
+	},
 	{"dt": "Workspace", "filters": [["name", "=", "Immobilier"]]},
 	{"dt": "Workspace Sidebar", "filters": [["name", "=", "Immobilier"]]},
 	{"dt": "Desktop Icon", "filters": [["label", "=", "Immobilier"]]},

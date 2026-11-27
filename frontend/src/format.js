@@ -1,4 +1,4 @@
-import { lang, t } from './i18n'
+import { lang, t, tn } from './i18n'
 import { session } from './session'
 
 const locale = () => (lang.value === 'fr' ? 'fr-FR' : 'en-GB')
@@ -52,4 +52,17 @@ export function today() {
 export function perPeriod(amount, frequency) {
   const unit = { monthly: '/ month', bimonthly: '/ 2 months', quarterly: '/ 3 months', semiannual: '/ 6 months', annual: '/ year' }[frequency] || '/ month'
   return `${money(amount)} ${t(unit)}`
+}
+
+/** "Apartment · 3 bedrooms · 85 m²": tells a tenant's units apart in a list. Empty when nothing is known. */
+export function unitSummary(f) {
+  if (!f) return ''
+  return [
+    f.type,
+    f.bedrooms ? tn(f.bedrooms, '{0} bedroom', '{0} bedrooms') : null,
+    f.area ? `${num(f.area)} m²` : null,
+    f.furnished ? t('Furnished') : null,
+  ]
+    .filter(Boolean)
+    .join(' · ')
 }

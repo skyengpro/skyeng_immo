@@ -6,11 +6,12 @@
 
     <ErrorState v-if="error" :error="error" @retry="reload" />
     <Skeleton v-else-if="!data" :rows="3" tall />
-    <div v-else class="grid grid-cols-[minmax(0,1fr)] gap-4 md:grid-cols-[minmax(0,1fr)_320px] md:items-start md:gap-5 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-6">
+    <SectionNav v-if="data && !error" :items="jumps" :label="t('Sections of this page')" />
+    <div v-if="data && !error" class="grid grid-cols-[minmax(0,1fr)] gap-4 md:grid-cols-[minmax(0,1fr)_320px] md:items-start md:gap-5 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-6">
       <aside class="space-y-4 md:order-2 md:sticky md:top-20">
         <PropertyFacts :features="data.features" :building-name="data.buildingName" />
-        <LeaseTerms v-if="data.currentLease" :lease="data.currentLease" :title="t('Current lease')">
-          <div class="mt-4 rounded-[14px] bg-paper-deep/70 p-4">
+        <LeaseTerms v-if="data.currentLease" id="lease" :lease="data.currentLease" :title="t('Current lease')">
+          <div class="mt-4 rounded-app bg-paper-deep/70 p-4">
             <p class="eyebrow mb-2">{{ t('Tenant') }}</p>
             <div class="flex items-center gap-3">
               <Initials :name="data.currentLease.tenant.name" />
@@ -22,18 +23,18 @@
           </div>
           <Btn class="mt-4" variant="primary" block icon="lucide-user-round" :label="t('See the tenant and their payments')" :to="leaseHref(data.currentLease.id)" />
         </LeaseTerms>
-        <Panel v-else :title="t('Current lease')" padded>
+        <Panel v-else id="lease" :title="t('Current lease')" padded>
           <p class="text-[14px] text-ink-mute">{{ t('This property is vacant. No lease is running.') }}</p>
         </Panel>
       </aside>
 
       <div class="min-w-0 space-y-8 md:order-1">
-        <section v-if="data.currentLease">
+        <section v-if="data.currentLease" id="schedule">
           <h2 class="mb-3 font-display text-[22px] text-ink">{{ t('Rent schedule') }}</h2>
           <ScheduleList :lines="data.currentLease.schedule" base="/proprietaire" />
         </section>
 
-        <section>
+        <section id="invoices">
           <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
             <h2 class="font-display text-[22px] text-ink">{{ t('Invoices') }}</h2>
             <Chips v-model="tab" :label="t('Invoices')" :options="[{ value: 'due', label: t('To collect'), count: due.length }, { value: 'paid', label: t('Paid'), count: paid.length }]" />
@@ -42,13 +43,13 @@
           <p v-else class="surface px-5 py-6 text-center text-[14px] text-ink-mute">{{ tab === 'due' ? t('Nothing to collect on this property.') : t('No paid invoice yet.') }}</p>
         </section>
 
-        <section>
+        <section id="repairs">
           <h2 class="mb-3 font-display text-[22px] text-ink">{{ t('Repairs') }}</h2>
           <IssueList v-if="data.issues.length" :issues="data.issues" base="/proprietaire" show-tenant />
           <p v-else class="surface px-5 py-6 text-center text-[14px] text-ink-mute">{{ t('No repair request on this property.') }}</p>
         </section>
 
-        <section>
+        <section id="past">
           <h2 class="mb-3 font-display text-[22px] text-ink">{{ t('Past leases') }}</h2>
           <p v-if="!data.pastLeases.length" class="surface px-5 py-6 text-center text-[14px] text-ink-mute">{{ t('No past lease for this property.') }}</p>
           <ul v-else class="stagger surface divide-y divide-line overflow-hidden">
@@ -71,6 +72,7 @@ import Panel from '@/components/Panel.vue'
 import IssueList from '@/components/IssueList.vue'
 import PropertyFacts from '@/components/PropertyFacts.vue'
 import Row from '@/components/Row.vue'
+import SectionNav from '@/components/SectionNav.vue'
 import Btn from '@/components/Btn.vue'
 import Chips from '@/components/Chips.vue'
 import Initials from '@/components/Initials.vue'
@@ -91,4 +93,12 @@ const tab = ref('due')
 const due = computed(() => (data.value?.invoices || []).filter((i) => i.outstanding > 0))
 const paid = computed(() => (data.value?.invoices || []).filter((i) => i.outstanding <= 0))
 const rows = computed(() => (tab.value === 'due' ? due.value : paid.value))
+// phone: jump straight to a section instead of scrolling past the others
+const jumps = computed(() => [
+  { id: 'lease', label: t('Lease'), icon: 'lucide-file-text' },
+  ...(data.value?.currentLease ? [{ id: 'schedule', label: t('Rent schedule'), icon: 'lucide-calendar-days' }] : []),
+  { id: 'invoices', label: t('Invoices'), icon: 'lucide-receipt-text', count: due.value.length },
+  { id: 'repairs', label: t('Repairs'), icon: 'lucide-wrench', count: data.value?.issues.length },
+  { id: 'past', label: t('Past leases'), icon: 'lucide-history', count: data.value?.pastLeases.length },
+])
 </script>

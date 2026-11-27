@@ -26,6 +26,8 @@ const FREQ = { monthly: 'Every month', bimonthly: 'Every 2 months', quarterly: '
 const items = computed(() => {
   const l = props.lease
   const rows = [
+    // landlord side only: the server sends no landlord to a tenant
+    ...(l.landlord ? [{ label: t('Landlord'), value: l.landlord.name }] : []),
     { label: t('Start'), value: date(l.startDate) },
     { label: t('End'), value: l.endDate ? date(l.endDate) : t('Open-ended') },
     { label: t('Payment'), value: t(FREQ[l.frequency] || FREQ.monthly) },

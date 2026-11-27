@@ -25,7 +25,7 @@
           <p class="whitespace-nowrap font-display text-[34px] min-[420px]:text-[40px] md:text-[30px] lg:text-[38px] xl:text-[44px] leading-none text-ink tabular">{{ money(next.invoice ? next.invoice.outstanding : next.line.amount) }}</p>
           <p class="mt-2 text-[15px]" :class="late ? 'font-semibold text-alert' : 'text-ink-soft'">{{ dueText }}</p>
           <p class="text-[13px] text-ink-mute">{{ period(item.periodStart, item.periodEnd) }}</p>
-          <p class="mt-4 rounded-[14px] bg-paper-deep/70 p-3.5 text-[13.5px] text-ink-soft">{{ t('Pay your property manager (cash, bank transfer or Mobile Money). The payment shows here as soon as it is recorded.') }}</p>
+          <p class="mt-4 rounded-app bg-paper-deep/70 p-3.5 text-[13.5px] text-ink-soft">{{ t('Pay your property manager (cash, bank transfer or Mobile Money). The payment shows here as soon as it is recorded.') }}</p>
           <Btn v-if="next.invoice" class="mt-4" variant="brand" block :label="t('See the invoice')" :to="`/locataire/factures/${encodeURIComponent(next.invoice.id)}`" />
         </template>
       </section>
@@ -48,6 +48,7 @@
             <span class="block text-[12.5px] text-ink-mute">{{ t('My lease') }}</span>
             <span class="block truncate text-[15px] font-semibold text-ink">{{ h.property.name }}</span>
             <span v-if="h.property.displayName !== h.property.name" class="block truncate text-[12.5px] text-ink-soft">{{ h.property.displayName.replace(` · ${h.property.name}`, '') }}</span>
+            <span v-if="unitSummary(h.features)" class="block truncate text-[12.5px] text-ink-soft">{{ unitSummary(h.features) }}</span>
             <span v-if="h.endDate" class="block text-[12.5px] text-ink-mute">{{ t('Lease until {0}', date(h.endDate)) }}</span>
           </span>
           <span class="lucide-chevron-right size-4 text-ink-faint transition group-hover:translate-x-0.5" />
@@ -72,7 +73,7 @@ import ErrorState from '@/components/ErrorState.vue'
 import Skeleton from '@/components/Skeleton.vue'
 import { useLoad } from '@/load'
 import { t, tn } from '@/i18n'
-import { date, longDate, money, period } from '@/format'
+import { date, longDate, money, period, unitSummary } from '@/format'
 import { session } from '@/session'
 
 const { data, error, reload } = useLoad('get_tenant_home')

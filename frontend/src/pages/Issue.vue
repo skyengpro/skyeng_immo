@@ -8,6 +8,11 @@
       <aside class="space-y-4 md:order-2 md:sticky md:top-20">
         <Panel v-if="data.canDecide" :title="t('Your decision')" padded class="!border-warn/25 !bg-warn-soft/40">
           <p class="mb-4 text-[13.5px] text-ink-soft">{{ t('Only you, as the owner, decide on this repair. Approving sends it to the property manager.') }}</p>
+          <label for="answer-note" class="mb-1.5 block text-[13px] font-semibold text-ink">{{ t('Message for the tenant (optional)') }}</label>
+          <textarea id="answer-note" v-model="note" rows="3" :maxlength="NOTE_MAX" :disabled="!!busy"
+            :placeholder="t('For example: the plumber comes on Tuesday morning.')"
+            class="field block w-full resize-none px-3 py-2.5 text-[14px]" aria-describedby="answer-note-count" />
+          <p id="answer-note-count" class="mb-4 mt-1 text-right text-[12px] tabular" :class="note.length >= NOTE_MAX ? 'text-alert' : 'text-ink-faint'">{{ note.length }} / {{ NOTE_MAX }}</p>
           <div class="grid gap-2">
             <Btn variant="brand" size="lg" block icon="lucide-check" :loading="busy === 'approve'" :disabled="!!busy" :label="t('Approve')" @click="decide('approve')" />
             <Btn size="lg" block icon="lucide-x" :loading="busy === 'reject'" :disabled="!!busy" :label="t('Reject')" @click="decide('reject')" />
@@ -33,7 +38,7 @@
           <ul v-if="data.photos?.length" class="mt-4 grid gap-3" :class="data.photos.length > 1 && 'sm:grid-cols-2'">
             <li v-for="(p, i) in data.photos" :key="p.id">
               <a :href="photoUrl(data.id, p.id)" target="_blank" rel="noopener">
-                <img :src="photoUrl(data.id, p.id)" :alt="t('Photo {0}', i + 1)" loading="lazy" class="max-h-80 w-full rounded-[14px] border border-line object-cover" />
+                <img :src="photoUrl(data.id, p.id)" :alt="t('Photo {0}', i + 1)" loading="lazy" class="max-h-80 w-full rounded-app border border-line object-cover" />
               </a>
             </li>
           </ul>
@@ -41,17 +46,21 @@
         <Panel v-if="data.resolution" :title="t('What was done')" padded>
           <p class="whitespace-pre-line text-[14.5px] leading-relaxed text-ink-soft">{{ data.resolution }}</p>
         </Panel>
-        <Panel :title="t('Answers from the property manager')" padded>
-          <p v-if="!data.replies.length" class="text-[14px] text-ink-mute">{{ t('No answer yet. It will show here.') }}</p>
-          <ul v-else class="space-y-3">
-            <li v-for="(r, i) in data.replies" :key="i" class="rounded-[14px] bg-paper-deep/70 p-3.5">
-              <div class="mb-1 flex flex-wrap items-baseline justify-between gap-2">
-                <span class="text-[13.5px] font-semibold text-ink">{{ r.author }}</span>
-                <span class="text-[12px] text-ink-mute">{{ date(r.at, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) }}</span>
-              </div>
-              <p class="whitespace-pre-line text-[14px] text-ink-soft">{{ r.message }}</p>
-            </li>
-          </ul>
+        <!-- the owner's answer, left with their decision. Hidden while the owner still has to decide:
+             the decision card above is where they write it -->
+        <Panel v-if="!data.canDecide" :title="answerTitle" padded>
+          <p v-if="!data.answer" class="text-[14px] text-ink-mute">{{ data.answersAsOwner ? t('Your answer will show here once you decide.') : t('No answer yet. It will show here.') }}</p>
+          <div v-else class="rounded-app bg-paper-deep/70 p-3.5">
+            <div class="mb-1 flex flex-wrap items-center justify-between gap-2">
+              <span class="flex items-center gap-1.5 text-[13.5px] font-semibold" :class="data.answer.decision === 'approved' ? 'text-ok' : 'text-alert'">
+                <span :class="data.answer.decision === 'approved' ? 'lucide-check' : 'lucide-x'" class="size-4" />
+                {{ data.answer.decision === 'approved' ? t('Approved') : t('Rejected') }}<template v-if="data.answer.author && !data.answersAsOwner"> · {{ data.answer.author }}</template>
+              </span>
+              <span v-if="data.answer.at" class="text-[12px] text-ink-mute">{{ date(data.answer.at, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) }}</span>
+            </div>
+            <p v-if="data.answer.message" class="whitespace-pre-line text-[14px] text-ink-soft">{{ data.answer.message }}</p>
+            <p v-else class="text-[13.5px] text-ink-mute">{{ t('No message left with this decision.') }}</p>
+          </div>
         </Panel>
       </div>
     </div>
@@ -80,6 +89,12 @@ const props = defineProps({ id: String })
 const base = space() === 'owner' ? '/proprietaire' : '/locataire'
 const { data, error, reload } = useLoad('get_issue', () => ({ name: props.id }))
 const busy = ref('')
+const NOTE_MAX = 250
+const note = ref('')
+// the owner who answers reads "Your answer"; staff over a third party's unit, "The landlord's answer"
+const answerTitle = computed(() =>
+  base === '/locataire' ? t("Answers from the landlord") : data.value?.answersAsOwner ? t('Your answer') : t("The landlord's answer"),
+)
 const help = {
   awaiting_approval: "Waiting for the owner's decision.",
   in_progress: 'Approved. The property manager is taking care of it.',
@@ -114,7 +129,8 @@ async function complete() {
 async function decide(decision) {
   busy.value = decision
   try {
-    await post('decide_issue', { name: props.id, decision })
+    await post('decide_issue', { name: props.id, decision, note: note.value.trim() })
+    note.value = ''
     toast.success(decision === 'approve' ? t('Request approved') : t('Request rejected'))
     await reload()
     loadAttention()

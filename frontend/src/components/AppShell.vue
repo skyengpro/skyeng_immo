@@ -14,7 +14,7 @@
       <nav class="flex-1 overflow-y-auto px-3" :aria-label="t('Main menu')">
         <p v-if="!folded" class="eyebrow mb-2 px-3">{{ t('Menu') }}</p>
         <RouterLink v-for="item in items" :key="item.to" :to="item.to" :title="folded ? t(item.label) : undefined"
-          class="group relative mb-0.5 flex items-center gap-3 rounded-[12px] py-2.5 text-[14px] transition"
+          class="group relative mb-0.5 flex items-center gap-3 rounded-app py-2.5 text-[14px] transition"
           :class="[folded ? 'justify-center px-0' : 'px-3',
             isActive(item, route.path) ? 'bg-sky-soft font-semibold text-sky' : 'font-medium text-ink-soft hover:bg-paper hover:text-ink']"
           :aria-current="isActive(item, route.path) ? 'page' : undefined">
@@ -26,14 +26,14 @@
       </nav>
 
       <div class="p-3">
-        <div v-if="!folded && space() === 'tenant'" class="mb-3 rounded-[16px] bg-sky-mist p-4">
+        <div v-if="!folded && space() === 'tenant'" class="mb-3 rounded-app bg-sky-mist p-4">
           <p class="font-display text-[17px] leading-snug text-sky">{{ t('Something broken at home?') }}</p>
           <p class="mt-1 text-[12.5px] leading-snug text-ink-mute">{{ t('Tell us in a minute, with a photo.') }}</p>
           <Btn class="mt-3" variant="brand" size="sm" icon="lucide-plus" :label="t('Report a problem')" to="/locataire/maintenance/nouvelle" />
         </div>
         <Dropdown :options="userMenu" side="top" align="start">
           <template #default>
-            <button class="flex w-full items-center gap-3 rounded-[12px] p-2 text-left transition hover:bg-paper" :class="folded && 'justify-center'">
+            <button class="flex w-full items-center gap-3 rounded-app p-2 text-left transition hover:bg-paper" :class="folded && 'justify-center'">
               <Initials :name="session.user.fullName" />
               <template v-if="!folded">
                 <div class="min-w-0 flex-1">
@@ -81,7 +81,7 @@
 
     <!-- phone tab bar -->
     <nav class="fixed inset-x-3 bottom-[max(12px,env(safe-area-inset-bottom))] z-30 mx-auto max-w-[480px] md:hidden" :aria-label="t('Main menu')">
-      <div class="grid items-center rounded-[24px] border border-line bg-card/95 px-1 py-1 shadow-lift backdrop-blur" :style="{ gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` }">
+      <div class="grid items-center rounded-app border border-line bg-card/95 px-1 py-1 shadow-lift backdrop-blur" :style="{ gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` }">
         <RouterLink v-for="item in items" :key="item.to" :to="item.to"
           class="relative flex min-w-0 flex-col items-center gap-0.5 py-1.5"
           :class="isActive(item, route.path) ? 'text-ink' : 'text-ink-mute'" :aria-current="isActive(item, route.path) ? 'page' : undefined">

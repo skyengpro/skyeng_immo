@@ -8,7 +8,7 @@
     <EmptyState v-else-if="!data.length" class="surface" :icon="tab === 'paid' ? 'lucide-receipt-text' : 'lucide-circle-check'"
       :title="tab === 'paid' ? t('No receipt yet') : t('Nothing to pay')" :text="tab === 'paid' ? t('Once an invoice is paid, it becomes a receipt you can download here.') : t('Every invoice is paid. Well done.')" />
     <template v-else>
-      <div class="mb-3 flex items-baseline justify-between rounded-[14px] px-4 py-3" :class="tab === 'paid' ? 'bg-ok-soft' : 'bg-paper-deep/70'">
+      <div class="mb-3 flex items-baseline justify-between rounded-app px-4 py-3" :class="tab === 'paid' ? 'bg-ok-soft' : 'bg-paper-deep/70'">
         <span class="text-[13.5px] text-ink-soft">{{ tab === 'paid' ? t('Total received') : t('Total to pay') }}</span>
         <span class="font-display text-[22px] text-ink tabular">{{ money(total) }}</span>
       </div>
@@ -22,8 +22,11 @@
           </RouterLink>
           <div class="flex shrink-0 flex-col items-end gap-1">
             <span class="whitespace-nowrap text-[14px] font-semibold text-ink tabular">{{ money(inv.total) }}</span>
-            <a :href="downloadUrl('invoice', inv.id)" target="_blank" rel="noopener" class="inline-flex items-center gap-1 rounded-full bg-sky-soft px-2.5 py-1 text-[12px] font-semibold text-sky hover:bg-sky-mid/20">
+            <a v-for="receipt in inv.receipts || []" :key="receipt" :href="downloadUrl('receipt', receipt)" target="_blank" rel="noopener" class="inline-flex items-center gap-1 rounded-full bg-sky-soft px-2.5 py-1 text-[12px] font-semibold text-sky hover:bg-sky-mid/20">
               <span class="lucide-download size-3.5" />{{ t('Receipt (PDF)') }}
+            </a>
+            <a v-if="!inv.receipts?.length" :href="downloadUrl('invoice', inv.id)" target="_blank" rel="noopener" class="inline-flex items-center gap-1 rounded-full bg-sky-soft px-2.5 py-1 text-[12px] font-semibold text-sky hover:bg-sky-mid/20">
+              <span class="lucide-download size-3.5" />{{ t('Invoice (PDF)') }}
             </a>
           </div>
         </li>

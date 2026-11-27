@@ -16,7 +16,7 @@
               <span class="mb-1.5 block text-[13px] font-semibold text-ink">{{ t('Email') }}</span>
               <input v-model="email" type="email" autocomplete="username" inputmode="email" autocapitalize="none" required class="field" />
             </label>
-            <p v-if="error" role="alert" class="rounded-[12px] bg-alert-soft px-3.5 py-2.5 text-[13px] text-alert">{{ error }}</p>
+            <p v-if="error" role="alert" class="rounded-app bg-alert-soft px-3.5 py-2.5 text-[13px] text-alert">{{ error }}</p>
             <Btn type="submit" variant="primary" size="lg" block :loading="loading" :label="t('Send the link')" />
           </form>
         </template>

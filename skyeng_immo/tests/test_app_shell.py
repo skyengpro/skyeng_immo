@@ -1,5 +1,4 @@
 from unittest.mock import patch
-from urllib.parse import parse_qs, urlparse
 
 import frappe
 from frappe.gettext.translate import compile_translations
@@ -11,6 +10,7 @@ from frappe.website.path_resolver import resolve_path
 
 from skyeng_immo import install
 from skyeng_immo.api import get_translations
+from skyeng_immo.immobilier.doctype.sky_immo_settings.sky_immo_settings import MODE_CUSTOMER, MODE_SKY
 from skyeng_immo.immobilier.doctype.sky_immo_settings.test_sky_immo_settings import make_user
 from skyeng_immo.www import sky_immo
 
@@ -56,19 +56,21 @@ class TestAppPage(IntegrationTestCase):
 				set_request(method="GET", path=f"/{path}")
 				self.assertEqual(resolve_path(path), "sky_immo")
 
-	def test_guest_is_sent_to_login_and_back(self):
-		set_request(method="GET", path="/sky-immo/properties")
-		frappe.set_user("Guest")
-		try:
-			with self.assertRaises(frappe.Redirect) as raised:
-				sky_immo.get_context(frappe._dict())
-		finally:
-			frappe.set_user("Administrator")
+	def test_guest_gets_the_app_for_its_own_sign_in_screen(self):
+		# The app's router shows /sky-immo/connexion; Frappe's /login must not take over.
+		for mode in (MODE_SKY, MODE_CUSTOMER):
+			for path in ("/sky-immo", "/sky-immo/connexion", "/sky-immo/mot-de-passe-oublie"):
+				with self.subTest(mode=mode, path=path):
+					set_request(method="GET", path=path)
+					frappe.set_user("Guest")
+					try:
+						with patch.object(sky_immo, "get_operating_mode", return_value=mode):
+							context = sky_immo.get_context(frappe._dict())
+					finally:
+						frappe.set_user("Administrator")
 
-		self.assertEqual(raised.exception.http_status_code, 302)
-		location = urlparse(frappe.flags.redirect_location)
-		self.assertEqual(location.path, "/login")
-		self.assertEqual(parse_qs(location.query)["redirect-to"], ["/sky-immo/properties"])
+					self.assertEqual(context.boot["session_user"], "Guest")
+					self.assertIsNone(context.boot["csrf_token"])
 
 	def test_signed_in_user_gets_boot_data(self):
 		email = make_user("_test_immo_page_tenant@example.com", ["Tenant"])

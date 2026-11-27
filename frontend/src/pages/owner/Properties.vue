@@ -6,17 +6,22 @@
     <Skeleton v-else-if="!data" :rows="4" />
     <EmptyState v-else-if="!units.length" class="surface" icon="lucide-building-2" :title="t('No property yet')" :text="t('Your property manager adds your properties here.')" />
     <template v-else>
-      <Chips v-if="units.length > 3" v-model="filter" class="mb-5" :label="t('Filter')" :options="options" />
-      <EmptyState v-if="!shown" class="surface" icon="lucide-search-x" :title="t('No property matches')">
+      <!-- staff: their own properties apart from those they manage for third-party landlords -->
+      <Tabs v-if="split" v-model="tab" class="mb-4" :label="t('Properties')" :options="tabs" />
+      <Chips v-if="tabUnits.length > 3" v-model="filter" class="mb-5" :label="t('Filter')" :options="options" />
+      <EmptyState v-if="!tabUnits.length" class="surface" icon="lucide-building-2"
+        :title="tab === 'mine' ? t('No property of your own') : t('No property managed for a landlord')"
+        :text="tab === 'mine' ? t('Properties owned by your own company appear here.') : t('Properties of third-party landlords appear here.')" />
+      <EmptyState v-else-if="!shown" class="surface" icon="lucide-search-x" :title="t('No property matches')">
         <Btn :label="t('Show all')" @click="filter = 'all'" />
       </EmptyState>
-      <div v-for="section in sections" :key="section.landlord?.id || 'all'" class="mb-8 last:mb-0" :class="data.byLandlord && 'rounded-[22px] bg-paper-deep/60 p-3 md:p-4'">
-        <h2 v-if="data.byLandlord" class="mb-3 px-1 font-display text-[22px] text-ink">{{ section.landlord ? t('Landlord: {0}', section.landlord.name) : t('No landlord recorded') }}</h2>
+      <div v-for="section in sections" :key="section.landlord?.id || 'all'" class="mb-8 last:mb-0" :class="headed && 'rounded-app bg-paper-deep/60 p-3 md:p-4'">
+        <h2 v-if="headed" class="mb-3 px-1 font-display text-[22px] text-ink">{{ section.landlord ? t('Landlord: {0}', section.landlord.name) : t('No landlord recorded') }}</h2>
         <section v-for="group in section.groups" :key="group.building?.id || 'solo'" class="mb-6 last:mb-0">
           <div class="mb-3 flex items-center gap-3 px-1">
             <span class="flex size-10 shrink-0 items-center justify-center rounded-full bg-sky-soft"><span class="lucide-building-2 size-[18px] text-sky-mid" /></span>
             <div class="min-w-0">
-              <h3 class="truncate font-display text-[20px] leading-tight text-ink">{{ group.building?.name || t('Other properties') }}</h3>
+              <h3 class="truncate font-display text-[20px] leading-tight text-ink">{{ group.building?.name || t('Units without a building') }}</h3>
               <p class="text-[12.5px] text-ink-mute">{{ tn(group.units.length, '{0} unit', '{0} units') }}</p>
             </div>
           </div>
@@ -53,7 +58,9 @@
 
 <script setup>
 import { computed, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import PageHeader from '@/components/PageHeader.vue'
+import Tabs from '@/components/Tabs.vue'
 import Initials from '@/components/Initials.vue'
 import Btn from '@/components/Btn.vue'
 import Chips from '@/components/Chips.vue'
@@ -65,16 +72,41 @@ import { useLoad } from '@/load'
 import { t, tn } from '@/i18n'
 import { perPeriod } from '@/format'
 
+const route = useRoute()
+const router = useRouter()
 const { data, error, reload } = useLoad('list_properties')
 const filter = ref('all')
 const STATUS = [['let', 'Let'], ['available', 'Vacant'], ['ending_soon', 'Lease ending'], ['renovation', 'Being renovated']]
-const units = computed(() => (data.value?.sections || []).flatMap((s) => s.groups.flatMap((g) => g.units)))
-const count = (v) => (v === 'all' ? units.value.length : units.value.filter((u) => u.status === v).length)
+const unitsOf = (list) => list.flatMap((s) => s.groups.flatMap((g) => g.units))
+const units = computed(() => unitsOf(data.value?.sections || []))
+
+// Staff (byLandlord) get two tabs: the properties of their own Customer, and the others by landlord.
+const split = computed(() => !!data.value?.byLandlord)
+const mineSections = computed(() => (data.value?.sections || []).filter((s) => s.mine))
+const otherSections = computed(() => (data.value?.sections || []).filter((s) => !s.mine))
+const tabs = computed(() => [
+  { value: 'mine', label: t('My properties'), count: unitsOf(mineSections.value).length },
+  { value: 'others', label: t('Other properties'), count: unitsOf(otherSections.value).length },
+])
+// the tab is kept in the URL, so coming back from a property reopens it
+const tab = computed({
+  get: () => (route.query.tab === 'others' || route.query.tab === 'mine' ? route.query.tab : !mineSections.value.length && otherSections.value.length ? 'others' : 'mine'),
+  set: (value) => {
+    filter.value = 'all'
+    router.replace({ query: { ...route.query, tab: value } })
+  },
+})
+const tabSections = computed(() => (!split.value ? data.value?.sections || [] : tab.value === 'mine' ? mineSections.value : otherSections.value))
+const tabUnits = computed(() => unitsOf(tabSections.value))
+// landlord headings: third parties' tab, or several Customers of the user's own
+const headed = computed(() => split.value && (tab.value === 'others' || mineSections.value.length > 1))
+
+const count = (v) => (v === 'all' ? tabUnits.value.length : tabUnits.value.filter((u) => u.status === v).length)
 const options = computed(() => [['all', 'All'], ...STATUS].filter(([v]) => v === 'all' || count(v)).map(([value, label]) => ({ value, label: t(label), count: count(value) })))
 const shown = computed(() => count(filter.value))
 // keep only the units that pass the filter, drop empty buildings and landlords
 const sections = computed(() =>
-  (data.value?.sections || [])
+  tabSections.value
     .map((s) => ({ ...s, groups: s.groups.map((g) => ({ ...g, units: g.units.filter((u) => filter.value === 'all' || u.status === filter.value) })).filter((g) => g.units.length) }))
     .filter((s) => s.groups.length),
 )

@@ -1,5 +1,5 @@
 import { reactive } from 'vue'
-import { get, net, clearCache } from './api'
+import { get, net, clearCache, setCacheUser } from './api'
 import { hasSavedLanguage, setLanguage } from './i18n'
 
 const SPACE_KEY = 'sky_immo.space'
@@ -43,9 +43,11 @@ export async function loadSession() {
     const s = await get('get_session')
     Object.assign(session, { user: s.user, noAccess: !!s.noAccess, currency: s.currency || 'XAF', space: pickSpace(s.user) })
     net.csrf = s.csrfToken
+    await setCacheUser(s.user?.id)
     if (s.user?.language && !hasSavedLanguage()) setLanguage(s.user.language, { remember: false })
   } catch {
     session.user = null
+    await setCacheUser(null)
   }
   session.ready = true
   return session.user

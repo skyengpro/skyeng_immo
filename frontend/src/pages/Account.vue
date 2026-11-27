@@ -39,7 +39,7 @@
         <p class="mt-3 text-[12.5px] text-ink-mute">{{ t('Light, dark, or the same as your phone.') }}</p>
       </Panel>
 
-      <p class="flex items-start gap-3 rounded-[16px] border border-line bg-card/60 px-4 py-3.5 text-[13.5px] text-ink-soft md:col-span-2">
+      <p class="flex items-start gap-3 rounded-app border border-line bg-card/60 px-4 py-3.5 text-[13.5px] text-ink-soft md:col-span-2">
         <span class="lucide-info mt-0.5 size-4 shrink-0 text-sky-mid" />
         {{ session.user.role === 'manager' ? t('Staff manage leases, tenants and payments in the desk.') : t('To change any information (lease, contact details, payment), contact your property manager.') }}
       </p>
