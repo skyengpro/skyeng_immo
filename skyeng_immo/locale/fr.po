@@ -899,3 +899,22 @@ msgstr "Vous n'avez pas accès à cette photo."
 #, python-brace-format
 msgid "{0} by {1} in Sky Immo."
 msgstr "{0} par {1} dans Sky Immo."
+
+#, python-brace-format
+msgid "Your message is too long: {0} characters at most."
+msgstr "Votre message est trop long : {0} caractères au maximum."
+
+msgid "Message too long"
+msgstr "Message trop long"
+
+msgid "Owner's answer"
+msgstr "Réponse du propriétaire"
+
+msgid "Message the owner left with their decision, shown to the tenant in the Sky Immo app (250 characters at most)."
+msgstr "Message laissé par le propriétaire avec sa décision, affiché au locataire dans l'application Sky Immo (250 caractères au maximum)."
+
+msgid "Decided by"
+msgstr "Décidé par"
+
+msgid "Decided on"
+msgstr "Décidé le"

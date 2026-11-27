@@ -33,6 +33,9 @@ MIRRORED_STATUS = {REJECTED: "Closed", COMPLETED: "Resolved"}
 
 DECISIONS = {"approve": IN_PROGRESS, "reject": REJECTED}
 
+# The owner's answer to the tenant, left with the decision: a short message, not a conversation.
+NOTE_MAX_LENGTH = 250
+
 
 def effective_owner(property_name: str | None) -> str | None:
 	"""Customer owning a property: its own ``unit_owner`` or its nearest parent's."""
@@ -80,10 +83,19 @@ def set_status(issue_name: str, status: str) -> None:
 
 
 @frappe.whitelist(methods=["POST"])
-def decide(name: str, decision: str) -> dict:
-	"""Approve or reject a maintenance request. Called by the app and by the desk buttons."""
+def decide(name: str, decision: str, note: str | None = None) -> dict:
+	"""Approve or reject a maintenance request. Called by the app and by the desk buttons.
+
+	`note` is the owner's optional answer to the tenant, kept on the request with who decided and when.
+	"""
 	if decision not in DECISIONS:
 		frappe.throw(_("Unknown decision."))
+	note = (note or "").strip()
+	if len(note) > NOTE_MAX_LENGTH:
+		frappe.throw(
+			_("Your message is too long: {0} characters at most.").format(NOTE_MAX_LENGTH),
+			title=_("Message too long"),
+		)
 	# Locked until the commit: two decisions sent at once cannot both pass the status check.
 	row = _locked(name, ["property_name", "sky_immo_status"])
 	# Who first: anyone else gets the same answer, whether the request exists or what its status is.
@@ -94,12 +106,22 @@ def decide(name: str, decision: str) -> dict:
 
 	new_status = DECISIONS[decision]
 	set_status(name, new_status)
+	frappe.db.set_value(
+		"Issue",
+		name,
+		{
+			"sky_immo_decision_note": note or None,
+			"sky_immo_decided_by": frappe.session.user,
+			"sky_immo_decided_on": frappe.utils.now_datetime(),
+		},
+	)
 	frappe.get_doc("Issue", name).add_comment(
 		"Info",
 		_("{0} by {1} in Sky Immo.").format(
 			_("Approved") if decision == "approve" else _("Rejected"),
 			frappe.utils.get_fullname(frappe.session.user),
-		),
+		)
+		+ (f" {note}" if note else ""),
 	)
 	return {"id": name, "approval": APP_STATUS[new_status]}
 

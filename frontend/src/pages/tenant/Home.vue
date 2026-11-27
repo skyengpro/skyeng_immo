@@ -48,6 +48,7 @@
             <span class="block text-[12.5px] text-ink-mute">{{ t('My lease') }}</span>
             <span class="block truncate text-[15px] font-semibold text-ink">{{ h.property.name }}</span>
             <span v-if="h.property.displayName !== h.property.name" class="block truncate text-[12.5px] text-ink-soft">{{ h.property.displayName.replace(` · ${h.property.name}`, '') }}</span>
+            <span v-if="unitSummary(h.features)" class="block truncate text-[12.5px] text-ink-soft">{{ unitSummary(h.features) }}</span>
             <span v-if="h.endDate" class="block text-[12.5px] text-ink-mute">{{ t('Lease until {0}', date(h.endDate)) }}</span>
           </span>
           <span class="lucide-chevron-right size-4 text-ink-faint transition group-hover:translate-x-0.5" />
@@ -72,7 +73,7 @@ import ErrorState from '@/components/ErrorState.vue'
 import Skeleton from '@/components/Skeleton.vue'
 import { useLoad } from '@/load'
 import { t, tn } from '@/i18n'
-import { date, longDate, money, period } from '@/format'
+import { date, longDate, money, period, unitSummary } from '@/format'
 import { session } from '@/session'
 
 const { data, error, reload } = useLoad('get_tenant_home')

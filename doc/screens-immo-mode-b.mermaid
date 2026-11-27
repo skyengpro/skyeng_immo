@@ -22,21 +22,21 @@ flowchart TB
     C0["<b>Sign in</b><br/>- Invitation link, or desk account for the property manager<br/>- The role picks the home screen"]
 
     subgraph BAI["App: property manager and third-party landlord"]
-        B1["<b>1. Home</b><br/>- Number of properties and tenants<br/>- Collected this month, total unpaid<br/>- Overdue invoices<br/>- Maintenance: awaiting approval, in progress"]
+        B1["<b>1. Home</b><br/>- Number of properties and tenants<br/>- Collected this month, total unpaid<br/>- Occupancy<br/>- Overdue invoices<br/>- Maintenance: awaiting approval, in progress<br/>(phone: one list at a time, picked<br/>with side-by-side buttons)"]
         B2["<b>2. My properties</b><br/>- Tree by building<br/>- Per unit: status, tenant, rent<br/>- Property manager: two tabs, their own<br/>properties, and the other properties<br/>grouped by landlord"]
         B3["<b>3. Property</b><br/>- Current lease, tenants, move-in date<br/>- Deposit, schedule<br/>- Paid and due invoices, past leases<br/>- Maintenance on this property"]
         B4["<b>4. Tenants</b><br/>- Every tenant, current or former<br/>- Unit occupied<br/>- Filters: my tenants, other tenants<br/>(property manager), former tenants"]
         B5["<b>5. Tenant</b><br/>- Lease terms, with the landlord<br/>- Payments: dates and amounts<br/>- Invoices due, PDF download"]
-        B6["<b>6. Maintenance</b><br/>- Requests by status<br/>- Detail: unit, tenant, description, photo<br/>- Approve or reject: the user linked<br/>to the owner (the third-party landlord,<br/>or a property manager who is a portal<br/>user of the customer's own Customer)"]
+        B6["<b>6. Maintenance</b><br/>- Requests by status<br/>- Detail: unit, tenant, description, photo<br/>- Approve or reject: the user linked<br/>to the owner (the third-party landlord,<br/>or a property manager who is a portal<br/>user of the customer's own Customer),<br/>with an optional message for the<br/>tenant (250 characters)"]
         B7["<b>7. Account</b><br/>- Language"]
     end
 
     subgraph LOC["App: tenant"]
         L1["<b>1. Home</b><br/>- Number of units occupied<br/>- Balance due, next due date<br/>- Latest maintenance request"]
-        L2["<b>2. My properties</b><br/>- Every unit occupied<br/>- Building, unit, rent, lease end"]
-        L3["<b>3. Property</b><br/>- Unit details<br/>- Lease dates, rent and frequency, deposit<br/>- Schedule with the status of each line"]
+        L2["<b>2. My properties</b><br/>- Every unit occupied<br/>- Building, unit, rent, lease end<br/>- What each unit is: type, bedrooms, area"]
+        L3["<b>3. Property</b><br/>- Unit details: type, rooms, area, parking,<br/>furnished, smoking, amenities, description<br/>- Lease dates, rent and frequency, deposit<br/>- Schedule with the status of each line"]
         L4["<b>4. Invoices and receipts</b><br/>- To pay, paid<br/>- Detail, PDF download"]
-        L5["<b>5. Maintenance</b><br/>- New request on a unit, with photo<br/>- List of requests and status<br/>- Mark as completed"]
+        L5["<b>5. Maintenance</b><br/>- New request on a unit, with photo<br/>- List of requests and status<br/>- The landlord's answer (decision, message)<br/>- Mark as completed"]
         L6["<b>6. Account</b><br/>- Language"]
     end
 

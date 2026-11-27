@@ -128,7 +128,21 @@ fixtures = [
 		],
 	},
 	{"dt": "Report", "filters": [["module", "=", "Immobilier"], ["is_standard", "=", "No"]]},
-	{"dt": "Custom Field", "filters": [["name", "in", ["Issue-sky_immo_status"]]]},
+	{
+		"dt": "Custom Field",
+		"filters": [
+			[
+				"name",
+				"in",
+				[
+					"Issue-sky_immo_status",
+					"Issue-sky_immo_decision_note",
+					"Issue-sky_immo_decided_by",
+					"Issue-sky_immo_decided_on",
+				],
+			]
+		],
+	},
 	{"dt": "Workspace", "filters": [["name", "=", "Immobilier"]]},
 	{"dt": "Workspace Sidebar", "filters": [["name", "=", "Immobilier"]]},
 	{"dt": "Desktop Icon", "filters": [["label", "=", "Immobilier"]]},

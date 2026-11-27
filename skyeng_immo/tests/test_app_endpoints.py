@@ -238,7 +238,21 @@ class TestAppEndpoints(IntegrationTestCase):
 			lease = api.get_lease(s.lease_2a)
 			listed = {row["id"]: row for row in api.list_my_leases()}
 		self.assertEqual(lease["buildingName"], s.floor2)
-		self.assertEqual(set(lease["features"]), {"type", "bedrooms", "bathrooms", "area", "furnished"})
+		self.assertEqual(
+			set(lease["features"]),
+			{
+				"type",
+				"bedrooms",
+				"masterBedrooms",
+				"bathrooms",
+				"area",
+				"furnished",
+				"parking",
+				"smoking",
+				"amenities",
+				"description",
+			},
+		)
 		self.assertGreater(listed[s.lease_2a]["amountPerPeriod"], 0)
 		self.assertEqual(listed[s.lease_2a]["frequency"], "monthly")
 

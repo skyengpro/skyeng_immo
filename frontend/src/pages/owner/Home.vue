@@ -24,8 +24,14 @@
           :hint="tn(data.stats.unpaidCount, '{0} invoice', '{0} invoices')" />
       </div>
 
-      <div class="mt-6 grid grid-cols-[minmax(0,1fr)] gap-4 md:mt-8 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] lg:gap-5">
-        <Panel :title="t('Late invoices')" :count="data.overdue.length || null">
+      <!-- phone: occupancy right under the four figures -->
+      <OccupancyCard v-if="occupancy.total" class="mt-3 md:hidden" :occupancy="occupancy" />
+
+      <!-- phone: one list at a time, picked with side-by-side buttons; wider screens show all three -->
+      <Tabs v-model="pick" cards class="mt-6 md:hidden" :label="t('What needs attention')" :options="picks" />
+
+      <div class="mt-4 grid grid-cols-[minmax(0,1fr)] gap-4 md:mt-8 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] lg:gap-5">
+        <Panel :class="pick !== 'late' && 'max-md:hidden'" :title="t('Late invoices')" :count="data.overdue.length || null">
           <EmptyState v-if="!data.overdue.length" icon="lucide-circle-check" :title="t('Nothing is late')" :text="t('Every invoice is paid or not due yet.')" />
           <ul v-else class="stagger divide-y divide-line">
             <Row v-for="inv in data.overdue" :key="inv.id" :to="inv.leaseId ? `/proprietaire/baux/${encodeURIComponent(inv.leaseId)}` : `/proprietaire/factures/${encodeURIComponent(inv.id)}`">
@@ -41,7 +47,7 @@
         </Panel>
 
         <div class="space-y-4 lg:space-y-5">
-          <Panel :title="t('Needs your decision')" :count="awaiting.length || null">
+          <Panel :class="pick !== 'awaiting' && 'max-md:hidden'" :title="t('Maintenance requests')" :count="awaiting.length || null">
             <template v-if="awaiting.length" #actions>
               <RouterLink to="/proprietaire/maintenance" class="text-[12.5px] font-semibold text-sky-mid hover:underline">{{ t('See all') }}</RouterLink>
             </template>
@@ -51,7 +57,7 @@
             <IssueList v-else :issues="awaiting.slice(0, 4)" base="/proprietaire" show-tenant class="!rounded-none !border-0 !shadow-none" />
           </Panel>
 
-          <Panel :title="t('Repairs in progress')" :count="inProgress.length || null">
+          <Panel :class="pick !== 'progress' && 'max-md:hidden'" :title="t('Maintenance in progress')" :count="inProgress.length || null">
             <template v-if="inProgress.length" #actions>
               <RouterLink to="/proprietaire/maintenance" class="text-[12.5px] font-semibold text-sky-mid hover:underline">{{ t('See all') }}</RouterLink>
             </template>
@@ -61,21 +67,7 @@
             <IssueList v-else :issues="inProgress.slice(0, 4)" base="/proprietaire" show-tenant class="!rounded-none !border-0 !shadow-none" />
           </Panel>
 
-          <Panel v-if="occupancy.total" :title="t('Occupancy')" padded>
-            <div class="flex items-baseline justify-between">
-              <span class="font-display text-[34px] leading-none text-ink tabular">{{ occupancy.rate }}<span class="text-[18px] text-ink-mute">%</span></span>
-              <span class="text-[12.5px] text-ink-mute">{{ letLabel }}</span>
-            </div>
-            <div class="mt-3 flex h-2.5 overflow-hidden rounded-full bg-paper-deep" role="img" :aria-label="letLabel">
-              <span class="bg-ok transition-[width] duration-700" :style="{ width: `${(occupancy.let / occupancy.total) * 100}%` }" />
-              <span class="bg-warn-mid" :style="{ width: `${(occupancy.ending / occupancy.total) * 100}%` }" />
-            </div>
-            <ul class="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[12.5px] text-ink-mute">
-              <li class="flex items-center gap-1.5"><span class="size-2 rounded-full bg-ok" />{{ t('Let') }} · {{ occupancy.let }}</li>
-              <li v-if="occupancy.ending" class="flex items-center gap-1.5"><span class="size-2 rounded-full bg-warn-mid" />{{ t('Lease ending') }} · {{ occupancy.ending }}</li>
-              <li class="flex items-center gap-1.5"><span class="size-2 rounded-full bg-paper-deep ring-1 ring-line-strong" />{{ t('Vacant') }} · {{ occupancy.vacant }}</li>
-            </ul>
-          </Panel>
+          <OccupancyCard v-if="occupancy.total" class="hidden md:block" :occupancy="occupancy" />
         </div>
       </div>
     </template>
@@ -85,6 +77,8 @@
 <script setup>
 import { computed, ref } from 'vue'
 import Btn from '@/components/Btn.vue'
+import Tabs from '@/components/Tabs.vue'
+import OccupancyCard from '@/components/OccupancyCard.vue'
 import StatCard from '@/components/StatCard.vue'
 import Panel from '@/components/Panel.vue'
 import Row from '@/components/Row.vue'
@@ -105,13 +99,23 @@ const units = ref([])
 get('list_properties').then((list) => (units.value = list.sections.flatMap((s) => s.groups.flatMap((g) => g.units)))).catch(() => {})
 const awaiting = computed(() => attention.issues.filter((i) => i.approval === 'awaiting_approval'))
 const inProgress = computed(() => attention.issues.filter((i) => i.approval === 'in_progress'))
-const letLabel = computed(() => t(occupancy.value.let === 1 ? '{0} unit let out of {1}' : '{0} units let out of {1}', occupancy.value.let, occupancy.value.total))
+// phone: the list shown under the buttons. Until one is tapped, the first that has something in it
+const picked = ref('')
+const picks = computed(() => [
+  { value: 'late', label: t('Late invoices'), icon: 'lucide-receipt-text', count: data.value?.overdue.length, tone: 'red' },
+  { value: 'awaiting', label: t('Maintenance requests'), icon: 'lucide-wrench', count: awaiting.value.length, tone: 'red' },
+  { value: 'progress', label: t('Maintenance in progress'), icon: 'lucide-hammer', count: inProgress.value.length },
+])
+const pick = computed({
+  get: () => picked.value || picks.value.find((p) => p.count)?.value || 'late',
+  set: (value) => (picked.value = value),
+})
 const occupancy = computed(() => {
   const total = units.value.length
   const count = (st) => units.value.filter((u) => u.status === st).length
   const let_ = count('let')
   const ending = count('ending_soon')
-  return { total, let: let_, ending, vacant: total - let_ - ending, rate: total ? Math.round(((let_ + ending) / total) * 100) : 0 }
+  return { total, let: let_, ending, vacant: total - let_ - ending }
 })
 const greeting = computed(() => {
   const h = new Date().getHours()

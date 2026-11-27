@@ -97,13 +97,32 @@ PROPERTY_FIELDS = [
 	"status",
 	"type",
 	"bedroom",
+	"master_bedroom",
 	"common_bathroom",
 	"builtup_area",
+	"no_of_parking",
+	"smoking",
 	"furnished",
+	"description",
 	"rent",
 	"lft",
 	"rgt",
 ]
+
+
+def amenities(property_name: str) -> list[str]:
+	"""Amenities listed on a unit in the desk (Property Amenity rows), in their desk order."""
+	return [
+		row.amenity_name
+		for row in frappe.get_all(
+			"Property Amenity",
+			filters={"parent": property_name, "parenttype": "Property"},
+			fields=["amenity_name"],
+			order_by="idx asc",
+			ignore_permissions=True,
+		)
+		if row.amenity_name
+	]
 
 
 def get_properties(names) -> dict[str, frappe._dict]:
